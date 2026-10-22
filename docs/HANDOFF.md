@@ -2,7 +2,7 @@
 
 ## v0.2公开更新准备
 
-用户批准同步三语言及备份读取修复到GitHub，公开v0.2对应内部0.2.11+13。发布正文docs/releases/v0.2.md；公开附件仅artifacts/github-release/v0.2/LiftTrace-v0.2.apk及SHA256SUMS.txt，APK是已验证正式包的逐字节副本。用户自行网页创建v0.2标签和Release，不自动登录CLI或发布；后续状态见S088，不把源码推送/附件准备记为Release已发布。旧v0.1标签及附件保留。
+三语言及备份读取修复已推送GitHub main（9521cad，远端SHA及六项关键公开文件实核一致），公开v0.2对应内部0.2.11+13。发布正文docs/releases/v0.2.md；公开附件仅artifacts/github-release/v0.2/LiftTrace-v0.2.apk及SHA256SUMS.txt，APK是已验证正式包的逐字节副本。用户自行网页创建v0.2标签和Release，不自动登录CLI或发布；后续状态见S088，不把源码推送/附件准备记为Release已发布。旧v0.1标签及附件保留。
 
 ## 0.2.11 多语言（最新）
 
