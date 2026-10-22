@@ -1,0 +1,45 @@
+.dart_tool/
+.flutter-plugins-dependencies
+.tooling/
+.pub-cache/
+build/
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+*.iml
+.idea/
+coverage/
+artifacts/private/
+
+# Local verification evidence, releases and personal exports stay on this computer.
+/artifacts/
+android/.kotlin/
+android/build/
+**/.cxx/
+**/__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.apk
+*.aab
+*.zip
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+
+# Flutter regenerates this file; never edit or commit its contents manually.
+GeneratedPluginRegistrant.java
+
+# Keep Gradle launchers and wrapper available in a fresh clone.
+!android/gradlew
+!android/gradlew.bat
+!android/gradle/wrapper/gradle-wrapper.jar

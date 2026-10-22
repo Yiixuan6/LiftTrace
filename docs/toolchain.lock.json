@@ -1,0 +1,19 @@
+{
+  "flutter": "3.47.7",
+  "frameworkRevision": "abaf9c523780a608bd46686fd5e53740a07077f8",
+  "engineRevision": "deb287481e3ce9468f3434937ced4240a70539ca",
+  "dart": "3.13.5",
+  "jdk": "17.0.16",
+  "androidApplicationId": "app.lianji.training",
+  "androidMinSdk": 26,
+  "androidCompileSdk": 36,
+  "androidTargetSdk": 36,
+  "androidBuildTools": "36.0.0",
+  "androidNdk": "28.2.13676358",
+  "ndkArchiveSha1": "086bba43ff2f5eb0e387b15c8278bb4e0d89ba1d",
+  "agp": "9.1.0",
+  "gradle": "9.3.1",
+  "kotlinPlugin": "2.4.0",
+  "androidBuiltInKotlin": true,
+  "androidNewDsl": false
+}
