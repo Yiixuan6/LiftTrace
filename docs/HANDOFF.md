@@ -1,8 +1,8 @@
 # 下一位维护者接手
 
-## 首次公开Release v0.1（待用户发布）
+## 首次公开Release v0.1（已发布、已验证；Pre-release）
 
-对外README已重写；发布说明docs/releases/v0.1.md。artifacts/github-release/v0.1/LiftTrace-v0.1.apk是原正式0.2.10+12 APK的逐字节副本，SHA256SUMS.txt配套，原签名及通知资源本轮实核通过。用户要求v0.1作为公开标签，APK内部版本保持；用户最后选择自行网页发布，未创建标签、未发布Release，也不继续GitHub CLI设备授权。后续不要把附件准备完成记为发布完成。
+对外README已重写；发布说明docs/releases/v0.1.md。artifacts/github-release/v0.1/LiftTrace-v0.1.apk是原正式0.2.10+12 APK的逐字节副本，SHA256SUMS.txt配套，原签名及通知资源本轮实核通过。用户自行网页发布v0.1后已实际读取公开页面及下载APK，字节数/SHA均与准备附件一致。当前页面标Pre-release，Latest入口仅转至发布列表；如需正式最新版，用户可编辑Release取消预发布并设为Latest。CLI设备授权已停止，未替用户更改Release设置；详情S080。
 
 ## 2026-10-22 GitHub 源码仓库
 
