@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,13 +35,13 @@ class _HistoryState extends ConsumerState<HistoryPage> {
             .toList()
           ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
     return PageBody(
-      title: '训练历史',
+      title: tr(context, "训练历史"),
       children: [
         Wrap(
           spacing: 8,
           children: [
             FilterChip(
-              label: const Text('日历'),
+              label: Text(tr(context, "日历")),
               selected: calendar,
               onSelected: (v) => setState(() => calendar = v),
             ),
@@ -61,9 +62,12 @@ class _HistoryState extends ConsumerState<HistoryPage> {
         DropdownButton<String?>(
           isExpanded: true,
           value: exerciseId,
-          hint: const Text('全部动作'),
+          hint: Text(tr(context, "全部动作")),
           items: [
-            const DropdownMenuItem<String?>(value: null, child: Text('全部动作')),
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text(tr(context, "全部动作")),
+            ),
             ...c.data.exercises
                 .where((e) => !e.deleted)
                 .map(
@@ -75,21 +79,24 @@ class _HistoryState extends ConsumerState<HistoryPage> {
           ],
           onChanged: (v) => setState(() => exerciseId = v),
         ),
-        if (list.isEmpty) const EmptyState(message: '这里还没有训练记录'),
+        if (list.isEmpty) EmptyState(message: tr(context, "这里还没有训练记录")),
         ...list.map(
           (s) => WorkoutCard(
             title: s.title,
-            subtitle:
-                '${dateKey(s.startedAt.toLocal())} · ${s.completedSets} 组 · ${s.duration(DateTime.now()).inMinutes} 分钟',
+            subtitle: tr(context, "{0} · {1} 组 · {2} 分钟", [
+              dateKey(s.startedAt.toLocal()),
+              s.completedSets,
+              s.duration(DateTime.now()).inMinutes,
+            ]),
             onTap: () => context.push('/history/${s.id}'),
             trailing: IconButton(
-              tooltip: '删除训练',
+              tooltip: tr(context, "删除训练"),
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
                 if (await confirm(
                       context,
-                      '删除这次训练？',
-                      '删除后统计会同步更新。请先导出备份以便恢复。',
+                      tr(context, "删除这次训练？"),
+                      tr(context, "删除后统计会同步更新。请先导出备份以便恢复。"),
                     ) &&
                     context.mounted) {
                   await runAction(

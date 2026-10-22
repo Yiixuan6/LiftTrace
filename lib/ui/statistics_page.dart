@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -33,13 +34,13 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  '时间范围',
+                  tr(context, "时间范围"),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
               for (final f in TimeFilter.values)
                 ListTile(
-                  title: Text(filterLabels[f.index]),
+                  title: Text(tr(context, filterLabels[f.index])),
                   trailing: filter == f ? const Icon(Icons.check) : null,
                   onTap: () => Navigator.pop(context, f),
                 ),
@@ -62,10 +63,16 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('统计口径', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              tr(context, "统计口径"),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
-            const Text(
-              '仅已完成组计入组数与训练量，进行中训练的已完成组也会计入。训练次数仅计有有效完成记录的已结束训练，训练天数按完成日期去重。\n\n训练时长扣除显式暂停，正常组间休息保留。外部负重训练量为重量 × 次数；哑铃按单只重量 × 左右实际次数之和。辅助重量和有氧不并入外部负重训练量。\n\n动作趋势每个有效完成组一个点，按完成先后排列；同日各组保留，横轴并非等比例时间轴。总外部重量与哑铃单只重量分开展示。',
+            Text(
+              tr(
+                context,
+                "仅已完成组计入组数与训练量，进行中训练的已完成组也会计入。训练次数仅计有有效完成记录的已结束训练，训练天数按完成日期去重。\n\n训练时长扣除显式暂停，正常组间休息保留。外部负重训练量为重量 × 次数；哑铃按单只重量 × 左右实际次数之和。辅助重量和有氧不并入外部负重训练量。\n\n动作趋势每个有效完成组一个点，按完成先后排列；同日各组保留，横轴并非等比例时间轴。总外部重量与哑铃单只重量分开展示。",
+              ),
             ),
           ],
         ),
@@ -81,11 +88,11 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
     final current = series.where((s) => s.key == selected).firstOrNull;
     return PageBody(
       root: true,
-      title: '统计',
-      subtitle: '把每一次积累，看得更清楚。',
+      title: tr(context, "统计"),
+      subtitle: tr(context, "把每一次积累，看得更清楚。"),
       actions: [
         IconButton(
-          tooltip: '统计口径',
+          tooltip: tr(context, "统计口径"),
           onPressed: explain,
           icon: const Icon(Icons.info_outline),
         ),
@@ -99,7 +106,7 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
             spacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(filterLabels[filter.index]),
+              Text(tr(context, filterLabels[filter.index])),
               const Icon(Icons.expand_more, size: 20),
             ],
           ),
@@ -107,27 +114,27 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
         SegmentedButton<int>(
           key: const ValueKey('stats-view'),
           showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: 0, label: Text('概览')),
-            ButtonSegment(value: 1, label: Text('动作趋势')),
+          segments: [
+            ButtonSegment(value: 0, label: Text(tr(context, "概览"))),
+            ButtonSegment(value: 1, label: Text(tr(context, "动作趋势"))),
           ],
           selected: {view},
           onSelectionChanged: (v) => setState(() => view = v.single),
         ),
         if (view == 0) ...[
-          const SectionHeading('训练概览'),
+          SectionHeading(tr(context, "训练概览")),
           _Metrics(stats),
-          const SectionHeading('外部负重训练量'),
+          SectionHeading(tr(context, "外部负重训练量")),
           _VolumeChart(
             buckets: volumeBuckets(stats.dailyVolume, filter),
             filter: filter,
           ),
-          const SectionHeading('肌群分布'),
+          SectionHeading(tr(context, "肌群分布")),
           _Muscles(stats.muscles),
         ] else ...[
-          const SectionHeading('逐组重量趋势'),
+          SectionHeading(tr(context, "逐组重量趋势")),
           FieldCaption(
-            label: '选择动作',
+            label: tr(context, "选择动作"),
             child: DropdownButtonFormField<String>(
               key: const ValueKey('stats-exercise'),
               initialValue: current?.key,
@@ -140,7 +147,7 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
                     (s) => DropdownMenuItem(
                       value: s.key,
                       child: Text(
-                        '${s.name} · ${kindShortLabels[s.kind.index]}',
+                        '${s.name} · ${tr(context, kindShortLabels[s.kind.index])}',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -151,13 +158,19 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
             ),
           ),
           if (current == null)
-            const ContentPanel(child: EmptyState(message: '选择一个动作，查看每一组的重量变化'))
+            ContentPanel(
+              child: EmptyState(message: tr(context, "选择一个动作，查看每一组的重量变化")),
+            )
           else if (!current.supportsWeight)
-            const ContentPanel(
-              child: EmptyState(message: '此动作没有可计算的负重趋势，辅助重量与有氧不并入重量曲线'),
+            ContentPanel(
+              child: EmptyState(
+                message: tr(context, "此动作没有可计算的负重趋势，辅助重量与有氧不并入重量曲线"),
+              ),
             )
           else if (current.points.isEmpty)
-            const ContentPanel(child: EmptyState(message: '所选时间内暂无已完成的重量记录'))
+            ContentPanel(
+              child: EmptyState(message: tr(context, "所选时间内暂无已完成的重量记录")),
+            )
           else
             _WeightChart(series: current),
         ],
@@ -172,12 +185,20 @@ class _Metrics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final values = [
-      ('训练次数', '${stats.sessions}', '次'),
-      ('外部负重训练量', stats.volume.toStringAsFixed(1), 'kg·次'),
-      ('训练时长', '${stats.duration.inMinutes}', '分钟'),
-      ('完成组数', '${stats.sets}', '组'),
-      ('训练天数', '${stats.days.length}', '天'),
-      ('有氧时长', (stats.cardioSeconds / 60).toStringAsFixed(1), '分钟'),
+      (tr(context, "训练次数"), '${stats.sessions}', tr(context, "次")),
+      (
+        tr(context, "外部负重训练量"),
+        stats.volume.toStringAsFixed(1),
+        tr(context, "kg·次"),
+      ),
+      (tr(context, "训练时长"), '${stats.duration.inMinutes}', tr(context, "分钟")),
+      (tr(context, "完成组数"), '${stats.sets}', tr(context, "组")),
+      (tr(context, "训练天数"), '${stats.days.length}', tr(context, "天")),
+      (
+        tr(context, "有氧时长"),
+        (stats.cardioSeconds / 60).toStringAsFixed(1),
+        tr(context, "分钟"),
+      ),
     ];
     return LayoutBuilder(
       builder: (context, box) {
@@ -254,18 +275,21 @@ class _VolumeChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final month = filter == TimeFilter.year || filter == TimeFilter.all;
     final scope = month
-        ? '每月'
+        ? tr(context, "每月")
         : filter == TimeFilter.days90
-        ? '每周（周一起始）'
-        : '每日';
+        ? tr(context, "每周（周一起始）")
+        : tr(context, "每日");
     final colors = Theme.of(context).colorScheme;
     return ContentPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('$scope · kg·次', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            tr(context, "{0} · kg·次", [scope]),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           if (buckets.isEmpty)
-            const EmptyState(message: '完成第一组负重训练后，训练量会在这里出现')
+            EmptyState(message: tr(context, "完成第一组负重训练后，训练量会在这里出现"))
           else ...[
             const SizedBox(height: 18),
             LayoutBuilder(
@@ -275,7 +299,7 @@ class _VolumeChart extends StatelessWidget {
                   64 + buckets.length * 42.0,
                 );
                 return Semantics(
-                  label: '外部负重训练量柱状图，可横向滚动，点按查看日期和数值',
+                  label: tr(context, "外部负重训练量柱状图，可横向滚动，点按查看日期和数值"),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
@@ -337,15 +361,16 @@ class _VolumeChart extends StatelessWidget {
                               fitInsideVertically: true,
                               getTooltipColor: (_) => colors.inverseSurface,
                               getTooltipItem:
-                                  (
-                                    group,
-                                    groupIndex,
-                                    rod,
-                                    rodIndex,
-                                  ) => BarTooltipItem(
-                                    '${dateKey(buckets[group.x].date)}\n${rod.toY.toStringAsFixed(1)} kg·次',
-                                    TextStyle(color: colors.onInverseSurface),
-                                  ),
+                                  (group, groupIndex, rod, rodIndex) =>
+                                      BarTooltipItem(
+                                        tr(context, "{0}\n{1} kg·次", [
+                                          dateKey(buckets[group.x].date),
+                                          rod.toY.toStringAsFixed(1),
+                                        ]),
+                                        TextStyle(
+                                          color: colors.onInverseSurface,
+                                        ),
+                                      ),
                             ),
                           ),
                         ),
@@ -356,17 +381,17 @@ class _VolumeChart extends StatelessWidget {
               },
             ),
             Text(
-              '点按柱形查看数值 · 记录较多时可左右滑动',
+              tr(context, "点按柱形查看数值 · 记录较多时可左右滑动"),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
-              title: const Text('训练量明细'),
+              title: Text(tr(context, "训练量明细")),
               children: [
                 for (final b in buckets)
                   _DetailLine(
                     dateKey(b.date),
-                    '${b.volume.toStringAsFixed(1)} kg·次',
+                    tr(context, "{0} kg·次", [b.volume.toStringAsFixed(1)]),
                   ),
               ],
             ),
@@ -387,7 +412,7 @@ class _Muscles extends StatelessWidget {
     final total = values.values.fold(0, (a, b) => a + b);
     return ContentPanel(
       child: list.isEmpty
-          ? const EmptyState(message: '暂无已完成组')
+          ? EmptyState(message: tr(context, "暂无已完成组"))
           : Column(
               children: [
                 for (final e in list)
@@ -395,14 +420,21 @@ class _Muscles extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Column(
                       children: [
-                        _DetailLine(e.key, '${e.value} 组'),
+                        _DetailLine(
+                          tr(context, e.key),
+                          tr(context, "{0} 组", [e.value]),
+                        ),
                         const SizedBox(height: 6),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
                             minHeight: 7,
                             value: e.value / total,
-                            semanticsLabel: '${e.key}，${e.value}组，共$total组',
+                            semanticsLabel: tr(context, "{0}，{1}组，共{2}组", [
+                              e.key,
+                              e.value,
+                              total,
+                            ]),
                           ),
                         ),
                       ],
@@ -426,19 +458,19 @@ class _WeightChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            series.unitLabel,
+            tr(context, series.unitLabel),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           Text(
             single
-                ? '目前只有一组记录，继续积累后会连成趋势。'
-                : '${points.length} 条已完成组 · 按完成先后排列',
+                ? tr(context, "目前只有一组记录，继续积累后会连成趋势。")
+                : tr(context, "{0} 条已完成组 · 按完成先后排列", [points.length]),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, box) => Semantics(
-              label: '逐组重量折线图，每组一个点，可横向滚动，点按查看完成时间和重量',
+              label: tr(context, "逐组重量折线图，每组一个点，可横向滚动，点按查看完成时间和重量"),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
@@ -523,12 +555,12 @@ class _WeightChart extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '每组一个点 · 点按查看详情 · 可左右滑动',
+            tr(context, "每组一个点 · 点按查看详情 · 可左右滑动"),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: const Text('逐组明细'),
+            title: Text(tr(context, "逐组明细")),
             children: [
               for (final p in points)
                 _DetailLine(

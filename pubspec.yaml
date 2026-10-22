@@ -1,7 +1,7 @@
 name: lianji
 description: 练迹 · 离线训练日志
 publish_to: none
-version: 0.2.10+12
+version: 0.2.11+13
 environment:
   sdk: '>=3.8.0 <4.0.0'
 dependencies:
@@ -37,6 +37,7 @@ flutter:
   shaders:
     - assets/shaders/liquid_glass.frag
   assets:
+    - assets/translations/
     - assets/images/home-hero-jade.png
     - assets/icons/arm-flex.png
     - assets/licenses/mdi.txt

@@ -1,3 +1,4 @@
+import 'l10n/app_strings.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import 'ui/liquid_glass.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppStrings.prepare();
   await LiquidGlassSurface.prepare();
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks([
@@ -40,7 +42,10 @@ Future<void> main() async {
     void openRest() => appRouter.go(
       controller.data.active == null ? '/train' : '/train/active',
     );
-    final reminders = RestReminders(onOpenRest: openRest);
+    final reminders = RestReminders(
+      onOpenRest: openRest,
+      languagePreference: () => controller.data.settings['language'] as String?,
+    );
     var openedFromRest = false;
     try {
       await reminders.initialize();
@@ -65,7 +70,17 @@ Future<void> main() async {
     } catch (_) {
       /* Timer continues in-app. */
     }
+    var reminderLanguage = controller.data.settings['language'];
     controller.onChanged = () async {
+      final language = controller.data.settings['language'];
+      if (reminderLanguage != language) {
+        reminderLanguage = language;
+        try {
+          await reminders.refreshLanguage();
+        } catch (_) {
+          /* Timer remains available. */
+        }
+      }
       if (controller.data.settings['autoBackup'] == true) {
         await BackgroundBackup.schedule();
       }
@@ -92,6 +107,13 @@ Future<void> main() async {
   } catch (_) {
     runApp(
       MaterialApp(
+        supportedLocales: AppStrings.supportedLocales,
+        localeListResolutionCallback: (locales, _) =>
+            AppStrings.resolve(locales?.firstOrNull),
+        localizationsDelegates: const [
+          AppStrings.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         theme: AppTheme.build(BrandTheme.orange, Brightness.light),
         home: const Scaffold(
           body: SafeArea(
@@ -202,9 +224,14 @@ class LianjiApp extends ConsumerWidget {
     final brand = BrandTheme.values.byName(settings['brand'] as String);
     final mode = Appearance.values.byName(settings['appearance'] as String);
     return MaterialApp.router(
-      locale: const Locale('zh', 'CN'),
-      supportedLocales: const [Locale('zh', 'CN')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      locale: AppStrings.preferred(settings['language'] as String?),
+      supportedLocales: AppStrings.supportedLocales,
+      localeListResolutionCallback: (locales, _) =>
+          AppStrings.resolve(locales?.firstOrNull),
+      localizationsDelegates: const [
+        AppStrings.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       themeAnimationDuration:
           WidgetsBinding
               .instance
@@ -213,7 +240,7 @@ class LianjiApp extends ConsumerWidget {
               .disableAnimations
           ? Duration.zero
           : ThemeTokens.quick,
-      title: '练迹 · 训练日志',
+      onGenerateTitle: (context) => tr(context, '练迹 · 训练日志'),
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
       theme: AppTheme.build(brand, Brightness.light),

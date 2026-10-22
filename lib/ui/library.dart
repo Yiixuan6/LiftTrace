@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/controller.dart';
@@ -38,10 +39,10 @@ class _LibraryState extends ConsumerState<LibraryPage> {
         )
         .toList();
     return PageBody(
-      title: widget.select == null ? '动作库' : '添加动作',
+      title: widget.select == null ? tr(context, "动作库") : tr(context, "添加动作"),
       children: [
         SearchBar(
-          hintText: '搜索动作名称',
+          hintText: tr(context, "搜索动作名称"),
           leading: const Icon(Icons.search),
           onChanged: (v) => setState(() => query = v),
         ),
@@ -50,7 +51,7 @@ class _LibraryState extends ConsumerState<LibraryPage> {
           children: ['全部', ...muscles]
               .map(
                 (m) => FilterChip(
-                  label: Text(m),
+                  label: Text(tr(context, m)),
                   selected: muscle == m,
                   onSelected: (_) => setState(() => muscle = m),
                 ),
@@ -61,23 +62,31 @@ class _LibraryState extends ConsumerState<LibraryPage> {
           spacing: 8,
           children: [
             FilterChip(
-              label: const Text('收藏'),
+              label: Text(tr(context, "收藏")),
               selected: favorites,
               onSelected: (v) => setState(() => favorites = v),
             ),
             FilterChip(
-              label: const Text('最近使用'),
+              label: Text(tr(context, "最近使用")),
               selected: recent,
               onSelected: (v) => setState(() => recent = v),
             ),
             DropdownButton<String>(
               value: equipment,
-              items: {
-                '全部',
-                ...c.data.exercises
-                    .where((e) => !e.deleted)
-                    .map((e) => e.equipment),
-              }.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              items:
+                  {
+                        '全部',
+                        ...c.data.exercises
+                            .where((e) => !e.deleted)
+                            .map((e) => e.equipment),
+                      }
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(tr(context, v)),
+                        ),
+                      )
+                      .toList(),
               onChanged: (v) => setState(() => equipment = v!),
             ),
           ],
@@ -85,9 +94,9 @@ class _LibraryState extends ConsumerState<LibraryPage> {
         OutlinedButton.icon(
           onPressed: () => createExercise(context, c),
           icon: const Icon(Icons.add),
-          label: const Text('自定义动作'),
+          label: Text(tr(context, "自定义动作")),
         ),
-        if (list.isEmpty) const EmptyState(message: '没有匹配动作，试试其他条件'),
+        if (list.isEmpty) EmptyState(message: tr(context, "没有匹配动作，试试其他条件")),
         ...list.map(
           (e) => ExerciseCard(
             exercise: e,
@@ -96,7 +105,7 @@ class _LibraryState extends ConsumerState<LibraryPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  tooltip: e.favorite ? '取消收藏' : '收藏',
+                  tooltip: e.favorite ? tr(context, "取消收藏") : tr(context, "收藏"),
                   icon: Icon(e.favorite ? Icons.star : Icons.star_border),
                   onPressed: () => runAction(
                     context,
@@ -111,24 +120,30 @@ class _LibraryState extends ConsumerState<LibraryPage> {
                 ),
                 if (widget.select != null)
                   IconButton(
-                    tooltip: '添加 ${e.name}',
+                    tooltip: tr(context, "添加 {0}", [e.name]),
                     icon: const Icon(Icons.add_circle_outline),
                     onPressed: () => widget.select!(e),
                   ),
                 if (widget.select == null)
                   PopupMenuButton<String>(
-                    tooltip: '管理 ${e.name}',
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'edit', child: Text('编辑动作')),
-                      PopupMenuItem(value: 'delete', child: Text('删除动作')),
+                    tooltip: tr(context, "管理 {0}", [e.name]),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text(tr(context, "编辑动作")),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(tr(context, "删除动作")),
+                      ),
                     ],
                     onSelected: (value) async {
                       if (value == 'edit') {
                         await createExercise(context, c, existing: e);
                       } else if (await confirm(
                             context,
-                            '删除动作？',
-                            '历史和模板中的快照保留。动作库将不再显示此动作。',
+                            tr(context, "删除动作？"),
+                            tr(context, "历史和模板中的快照保留。动作库将不再显示此动作。"),
                           ) &&
                           context.mounted) {
                         await runAction(
@@ -178,7 +193,9 @@ Future<void> createExercise(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, refresh) => AlertDialog(
-        title: Text(existing == null ? '自定义动作' : '编辑动作'),
+        title: Text(
+          existing == null ? tr(context, "自定义动作") : tr(context, "编辑动作"),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -190,7 +207,12 @@ Future<void> createExercise(
                 isExpanded: true,
                 value: muscle,
                 items: {muscle, ...muscles}
-                    .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                    .map(
+                      (m) => DropdownMenuItem(
+                        value: m,
+                        child: Text(tr(context, m)),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) => refresh(() => muscle = v!),
               ),
@@ -213,7 +235,7 @@ Future<void> createExercise(
               Text(kindLabels[kind.index]),
               if (error != null)
                 Text(
-                  error!,
+                  tr(context, error!),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
             ],
@@ -222,7 +244,7 @@ Future<void> createExercise(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(tr(context, "取消")),
           ),
           FilledButton(
             onPressed: () {
@@ -238,10 +260,12 @@ Future<void> createExercise(
                   ),
                 );
               } else {
-                refresh(() => error = '请填写动作名称和器械');
+                refresh(() => error = "请填写动作名称和器械");
               }
             },
-            child: Text(existing == null ? '创建' : '保存'),
+            child: Text(
+              existing == null ? tr(context, "创建") : tr(context, "保存"),
+            ),
           ),
         ],
       ),

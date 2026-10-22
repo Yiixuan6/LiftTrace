@@ -46,6 +46,19 @@ class BackupCodec {
   }
 
   static void validate(AppData data) {
+    if (data.settings.containsKey('language') &&
+        ![
+          'system',
+          'zh_Hans',
+          'zh_Hant',
+          'en',
+        ].contains(data.settings['language'])) {
+      throw const FormatException('不支持的语言设置');
+    }
+    final preset = data.settings['restPresetSeconds'];
+    if (preset != null && (preset is! int || preset < 1 || preset > 86400)) {
+      throw const FormatException('休息时长无效');
+    }
     if (data.revision < 0) throw const FormatException('修订号无效');
     const settingKeys = {
       'brand',
@@ -55,6 +68,8 @@ class BackupCodec {
       'autoBackup',
       'restDeadline',
       'restRemaining',
+      'language',
+      'restPresetSeconds',
     };
     if (data.settings.keys.any((key) => !settingKeys.contains(key))) {
       throw const FormatException('设置包含未知或设备专用字段');

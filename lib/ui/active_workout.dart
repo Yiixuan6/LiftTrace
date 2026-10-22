@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,9 +81,9 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
       ..showSnackBar(
         SnackBar(
           showCloseIcon: true,
-          content: Text(text),
+          content: Text(tr(context, text)),
           action: SnackBarAction(
-            label: '提醒设置',
+            label: tr(context, "提醒设置"),
             onPressed: () => unawaited(enableReminders()),
           ),
         ),
@@ -103,7 +104,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
         : await showEditorialDialog<String>(
             context: context,
             builder: (context) => SimpleDialog(
-              title: const Text('给哪个动作新增一组？'),
+              title: Text(tr(context, "给哪个动作新增一组？")),
               children: [
                 for (final (i, move)
                     in session.exercises.indexed.toList().reversed)
@@ -204,13 +205,13 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
     if (session == null) {
       return PageBody(
         preserveLayout: true,
-        title: '训练',
+        title: tr(context, "训练"),
         children: [
           EmptyState(
-            message: '当前没有训练',
+            message: tr(context, "当前没有训练"),
             action: FilledButton(
               onPressed: () => context.go('/train'),
-              child: const Text('返回训练'),
+              child: Text(tr(context, "返回训练")),
             ),
           ),
         ],
@@ -229,7 +230,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
         (session.exercises.firstOrNull?.data['restSeconds'] as num?)?.toInt() ??
         90;
     final body = PageBody(
-      title: session.active ? '正在训练' : '训练详情',
+      title: session.active ? tr(context, "正在训练") : tr(context, "训练详情"),
       subtitle: session.title,
       children: [
         Card(
@@ -243,7 +244,11 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(session.paused ? '训练已暂停' : '训练计时'),
+                      Text(
+                        session.paused
+                            ? tr(context, "训练已暂停")
+                            : tr(context, "训练计时"),
+                      ),
                       const SizedBox(height: 4),
                       FittedBox(
                         fit: BoxFit.scaleDown,
@@ -261,14 +266,14 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('实际完成'),
+                      Text(tr(context, "实际完成")),
                       const SizedBox(height: 4),
                       Text.rich(
                         TextSpan(
                           text: '${session.completedSets}',
                           children: [
                             TextSpan(
-                              text: ' 组',
+                              text: tr(context, " 组"),
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ],
@@ -289,11 +294,13 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
               OutlinedButton.icon(
                 onPressed: () => runAction(context, () => c.pause(session.id)),
                 icon: Icon(session.paused ? Icons.play_arrow : Icons.pause),
-                label: Text(session.paused ? '继续训练' : '暂停训练'),
+                label: Text(
+                  session.paused ? tr(context, "继续训练") : tr(context, "暂停训练"),
+                ),
               ),
               FilledButton(
                 onPressed: finishing ? null : () => finish(context, c, session),
-                child: const Text('结束训练'),
+                child: Text(tr(context, "结束训练")),
               ),
             ],
           ),
@@ -306,22 +313,23 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                 children: [
                   Text(
                     remaining == null
-                        ? '组间休息'
+                        ? tr(context, "组间休息")
                         : remaining == 0
-                        ? '休息结束'
-                        : '休息 ${clock(remaining)}',
+                        ? tr(context, "休息结束")
+                        : tr(context, "休息 {0}", [clock(remaining)]),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  if (reminderStatus != null) Text(reminderStatus!.message),
-                  Text('完成组后沿用 $preset 秒；点时长可立即开始'),
+                  if (reminderStatus != null)
+                    Text(tr(context, reminderStatus!.message)),
+                  Text(tr(context, "完成组后沿用 {0} 秒；点时长可立即开始", [preset])),
                   Wrap(
                     spacing: 8,
                     children: [60, 90, 120]
                         .map(
                           (s) => ChoiceChip(
-                            label: Text('$s 秒'),
+                            label: Text(tr(context, "{0} 秒", [s])),
                             selected: preset == s,
                             onSelected: (_) => runAction(
                               context,
@@ -336,7 +344,10 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                     children: [
                       TextButton(
                         onPressed: () async {
-                          final text = await askText(context, '休息秒数（1–86400）');
+                          final text = await askText(
+                            context,
+                            tr(context, "休息秒数（1–86400）"),
+                          );
                           if (!context.mounted) return;
                           final seconds = int.tryParse(text ?? '');
                           if (seconds != null &&
@@ -347,10 +358,10 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                               () => setRest(c, seconds, preset: true),
                             );
                           } else if (text != null && mounted) {
-                            restMessage('请输入 1–86400 的整秒数');
+                            restMessage(tr(context, "请输入 1–86400 的整秒数"));
                           }
                         },
-                        child: const Text('自定义'),
+                        child: Text(tr(context, "自定义")),
                       ),
                       if (remaining != null && remaining > 0) ...[
                         TextButton(
@@ -369,7 +380,11 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                               }
                             }
                           }),
-                          child: Text(deadline == null ? '继续' : '暂停'),
+                          child: Text(
+                            deadline == null
+                                ? tr(context, "继续")
+                                : tr(context, "暂停"),
+                          ),
                         ),
                         TextButton(
                           onPressed: () => runAction(context, () async {
@@ -382,20 +397,20 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                               await setRest(c, remaining + 30);
                             }
                           }),
-                          child: const Text('+30 秒'),
+                          child: Text(tr(context, "+30 秒")),
                         ),
                         TextButton(
                           onPressed: () =>
                               runAction(context, () => setRest(c, null)),
-                          child: const Text('结束休息'),
+                          child: Text(tr(context, "结束休息")),
                         ),
                       ],
                       TextButton(
                         onPressed: enableReminders,
                         child: Text(
                           reminderStatus?.initializationFailed == true
-                              ? '重试提醒'
-                              : '后台提醒设置',
+                              ? tr(context, "重试提醒")
+                              : tr(context, "后台提醒设置"),
                         ),
                       ),
                       TextButton(
@@ -405,12 +420,12 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                               .read(remindersProvider)
                               .openBackgroundSettings(),
                         ),
-                        child: const Text('后台运行设置'),
+                        child: Text(tr(context, "后台运行设置")),
                       ),
                     ],
                   ),
-                  const Text(
-                    '若切到其他应用后不提醒，请在耗电管理中允许本应用后台运行。',
+                  Text(
+                    tr(context, "若切到其他应用后不提醒，请在耗电管理中允许本应用后台运行。"),
                     style: TextStyle(fontSize: 12),
                   ),
                 ],
@@ -440,7 +455,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                             )
                           : null,
                       icon: const Icon(Icons.add),
-                      label: const Text('新增一组'),
+                      label: Text(tr(context, "新增一组")),
                     ),
                   ),
                   SizedBox(
@@ -456,7 +471,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                         }
                       },
                       icon: const Icon(Icons.add),
-                      label: const Text('添加动作'),
+                      label: Text(tr(context, "添加动作")),
                     ),
                   ),
                 ],
@@ -464,7 +479,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
             },
           ),
         if (session.exercises.isEmpty)
-          const EmptyState(message: '添加第一个动作，开始记录'),
+          EmptyState(message: tr(context, "添加第一个动作，开始记录")),
         ...session.exercises.indexed.toList().reversed.map((pair) {
           final i = pair.$1, move = pair.$2;
           final previous =
@@ -491,11 +506,11 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                 spacing: 8,
                 children: [
                   Text(
-                    '${i + 1}. ${move.exercise.name}${move.skipped ? ' · 已跳过' : ''}',
+                    '${i + 1}. ${move.exercise.name}${move.skipped ? tr(context, " · 已跳过") : ''}',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   IconButton(
-                    tooltip: '上移动作',
+                    tooltip: tr(context, "上移动作"),
                     onPressed: i == session.exercises.length - 1
                         ? null
                         : () => runAction(
@@ -530,18 +545,31 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                             !move.skipped;
                       }),
                     ),
-                    child: Text(move.skipped ? '取消跳过' : '跳过后续组'),
+                    child: Text(
+                      move.skipped ? tr(context, "取消跳过") : tr(context, "跳过后续组"),
+                    ),
                   ),
                 ],
               ),
               Text(kindLabels[move.exercise.kind.index]),
               if (last != null)
                 Text(
-                  '上次：${last.sets.where((s) => s.completed).map((s) => move.exercise.kind == LoadKind.dumbbell
-                      ? '${s.weight ?? '—'}kg × 左${s.value('leftReps') ?? 0}/右${s.value('rightReps') ?? 0}'
-                      : move.exercise.kind == LoadKind.cardio
-                      ? '${s.seconds ?? 0}秒'
-                      : '${s.weight ?? s.value('assistance') ?? '—'}kg × ${s.reps ?? 0}').join('，')}',
+                  tr(context, "上次：{0}", [
+                    last.sets
+                        .where((s) => s.completed)
+                        .map(
+                          (s) => move.exercise.kind == LoadKind.dumbbell
+                              ? tr(context, "{0}kg × 左{1}/右{2}", [
+                                  s.weight ?? '—',
+                                  s.value('leftReps') ?? 0,
+                                  s.value('rightReps') ?? 0,
+                                ])
+                              : move.exercise.kind == LoadKind.cardio
+                              ? tr(context, "{0}秒", [s.seconds ?? 0])
+                              : '${s.weight ?? s.value('assistance') ?? '—'}kg × ${s.reps ?? 0}',
+                        )
+                        .join('，'),
+                  ]),
                 ),
               // Number in stored order, then reverse only the presentation.
               // New/copy groups stay newest-first without rebinding row state.
@@ -593,7 +621,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                           () => appendSet(c, session.id, move.id),
                         ),
                   icon: const Icon(Icons.add),
-                  label: const Text('新增一组'),
+                  label: Text(tr(context, "新增一组")),
                 ),
             ],
           );
@@ -607,21 +635,24 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
               }
             },
             icon: const Icon(Icons.add),
-            label: const Text('添加动作'),
+            label: Text(tr(context, "添加动作")),
           ),
         if (!session.active) ...[
           OutlinedButton(
             onPressed: () => finish(context, c, session, editing: true),
-            child: const Text('编辑训练信息'),
+            child: Text(tr(context, "编辑训练信息")),
           ),
           Text(
-            '整体感受：${session.data['feeling'] ?? '未填写'}\n恢复备注：${session.data['recoveryNote'] ?? '未填写'}',
+            tr(context, "整体感受：{0}\n恢复备注：{1}", [
+              tr(context, session.data['feeling'] as String? ?? '未填写'),
+              session.data['recoveryNote'] ?? tr(context, "未填写"),
+            ]),
           ),
           OutlinedButton(
             onPressed: () async {
               final name = await askText(
                 context,
-                '复制为模板',
+                tr(context, "复制为模板"),
                 initial: session.title,
               );
               if (name != null) {
@@ -632,11 +663,11 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                 );
               }
             },
-            child: const Text('复制为模板'),
+            child: Text(tr(context, "复制为模板")),
           ),
         ],
         if (c.error != null) ErrorState(message: c.error!),
-        const Text('编辑会及时保存。离开页面不等于结束训练。'),
+        Text(tr(context, "编辑会及时保存。离开页面不等于结束训练。")),
       ],
     );
     final nextMove = session.exercises
@@ -654,13 +685,15 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
               children: [
                 Expanded(
                   child: Text(
-                    '${deadline == null ? "休息已暂停" : "休息"} ${clock(remaining)}',
+                    '${deadline == null ? tr(context, "休息已暂停") : tr(context, "休息")} ${clock(remaining)}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
                 IconButton(
                   key: const ValueKey('rest-quick-pause'),
-                  tooltip: deadline == null ? '继续休息' : '暂停休息',
+                  tooltip: deadline == null
+                      ? tr(context, "继续休息")
+                      : tr(context, "暂停休息"),
                   onPressed: () => runAction(context, () async {
                     if (deadline == null) {
                       await setRest(c, remaining);
@@ -677,7 +710,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                 TextButton(
                   key: const ValueKey('rest-skip'),
                   onPressed: () => runAction(context, () => setRest(c, null)),
-                  child: const Text('跳过'),
+                  child: Text(tr(context, "跳过")),
                 ),
               ],
             ),
@@ -720,7 +753,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                                 setState(
                                   () => mainError = e is FormatException
                                       ? e.message
-                                      : '保存失败，请重试',
+                                      : tr(context, "保存失败，请重试"),
                                 );
                               }
                             }
@@ -728,7 +761,11 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                           },
                     icon: const Icon(Icons.check),
                     label: Text(
-                      completing ? '保存中…' : '完成下一组 · ${nextMove.exercise.name}',
+                      completing
+                          ? tr(context, "保存中…")
+                          : tr(context, "完成下一组 · {0}", [
+                              nextMove.exercise.name,
+                            ]),
                     ),
                   ),
                 ],
@@ -753,17 +790,22 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, refresh) => AlertDialog(
-          title: Text(editing ? '编辑训练信息' : '结束本次训练？'),
+          title: Text(editing ? tr(context, "编辑训练信息") : tr(context, "结束本次训练？")),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${s.completedSets} 组已完成，未完成组不计入实际完成量。'),
+                Text(tr(context, "{0} 组已完成，未完成组不计入实际完成量。", [s.completedSets])),
                 DropdownButton<String>(
                   value: feeling,
-                  hint: const Text('整体感受（可选）'),
+                  hint: Text(tr(context, "整体感受（可选）")),
                   items: ['轻松', '适中', '吃力', '接近力竭']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(tr(context, v)),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => refresh(() => feeling = v),
                 ),
@@ -778,11 +820,11 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(editing ? '取消' : '继续练'),
+              child: Text(editing ? tr(context, "取消") : tr(context, "继续练")),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text(editing ? '保存修改' : '结束并保存'),
+              child: Text(editing ? tr(context, "保存修改") : tr(context, "结束并保存")),
             ),
           ],
         ),

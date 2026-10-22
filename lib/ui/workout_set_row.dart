@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import '../domain/models.dart';
 import 'components.dart';
@@ -74,7 +75,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                 parsed != parsed.roundToDouble()))) {
       invalidFields.add(key);
       widget.onValidityChanged?.call(false);
-      setState(() => error = '请填写有效的非负数，次数须为整数');
+      setState(() => error = "请填写有效的非负数，次数须为整数");
       return;
     }
     try {
@@ -82,13 +83,13 @@ class _SetRowState extends State<WorkoutSetRow> {
       if (mounted && versions[key] == version) {
         invalidFields.remove(key);
         widget.onValidityChanged?.call(invalidFields.isEmpty);
-        setState(() => error = invalidFields.isEmpty ? null : '仍有无效输入，请修正后再完成');
+        setState(() => error = invalidFields.isEmpty ? null : "仍有无效输入，请修正后再完成");
       }
     } catch (_) {
       if (mounted && versions[key] == version) {
         invalidFields.add(key);
         widget.onValidityChanged?.call(false);
-        setState(() => error = '保存失败，请修正或重试后再完成');
+        setState(() => error = "保存失败，请修正或重试后再完成");
       }
     }
   }
@@ -123,18 +124,21 @@ class _SetRowState extends State<WorkoutSetRow> {
               spacing: 8,
               children: [
                 Text(
-                  '第 ${widget.index + 1} 组${widget.set.completed ? ' · 已完成 ✓' : ''}',
+                  tr(context, "第 {0} 组{1}", [
+                    widget.index + 1,
+                    widget.set.completed ? tr(context, " · 已完成 ✓") : '',
+                  ]),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 IconButton(
-                  tooltip: '复制本组为未完成组',
+                  tooltip: tr(context, "复制本组为未完成组"),
                   onPressed: widget.enabled
                       ? () => runAction(context, widget.copy)
                       : null,
                   icon: const Icon(Icons.copy),
                 ),
                 IconButton(
-                  tooltip: '删除本组',
+                  tooltip: tr(context, "删除本组"),
                   onPressed: widget.enabled
                       ? () => runAction(context, widget.remove)
                       : null,
@@ -159,11 +163,21 @@ class _SetRowState extends State<WorkoutSetRow> {
                   ),
                 if (widget.kind == LoadKind.dumbbell) ...[
                   DropdownButton<String>(
+                    isExpanded:
+                        AppStrings.of(context).locale.languageCode == 'en' ||
+                        MediaQuery.textScalerOf(context).scale(14) > 21,
+                    itemHeight: null,
                     value: d['sideMode'] as String?,
-                    hint: const Text('单双侧方式'),
-                    items: const [
-                      DropdownMenuItem(value: 'bilateral', child: Text('双侧')),
-                      DropdownMenuItem(value: 'unilateral', child: Text('单侧')),
+                    hint: Text(tr(context, "单双侧方式")),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'bilateral',
+                        child: Text(tr(context, "双侧")),
+                      ),
+                      DropdownMenuItem(
+                        value: 'unilateral',
+                        child: Text(tr(context, "单侧")),
+                      ),
                     ],
                     onChanged: widget.enabled
                         ? (v) => runAction(
@@ -189,7 +203,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                   LoadKind.dumbbell,
                 ].contains(widget.kind)) ...[
                   IconButton(
-                    tooltip: '重量减 2.5 kg',
+                    tooltip: tr(context, "重量减 2.5 kg"),
                     onPressed: !widget.enabled
                         ? null
                         : () {
@@ -203,7 +217,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                     icon: const Icon(Icons.remove_circle_outline),
                   ),
                   IconButton(
-                    tooltip: '重量加 2.5 kg',
+                    tooltip: tr(context, "重量加 2.5 kg"),
                     onPressed: !widget.enabled
                         ? null
                         : () {
@@ -223,10 +237,19 @@ class _SetRowState extends State<WorkoutSetRow> {
               spacing: 12,
               children: [
                 DropdownButton<String>(
+                  isExpanded:
+                      AppStrings.of(context).locale.languageCode == 'en' ||
+                      MediaQuery.textScalerOf(context).scale(14) > 21,
+                  itemHeight: null,
                   value: d['feeling'] as String?,
-                  hint: const Text('感受（可选）'),
+                  hint: Text(tr(context, "感受（可选）")),
                   items: ['轻松', '适中', '吃力', '接近力竭']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(tr(context, v)),
+                        ),
+                      )
                       .toList(),
                   onChanged: widget.enabled
                       ? (v) => runAction(
@@ -236,10 +259,19 @@ class _SetRowState extends State<WorkoutSetRow> {
                       : null,
                 ),
                 DropdownButton<String>(
+                  isExpanded:
+                      AppStrings.of(context).locale.languageCode == 'en' ||
+                      MediaQuery.textScalerOf(context).scale(14) > 21,
+                  itemHeight: null,
                   value: d['bodyState'] as String?,
-                  hint: const Text('身体状态'),
+                  hint: Text(tr(context, "身体状态")),
                   items: ['无痛', '正常肌肉酸胀', '轻微不适', '明显疼痛']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(tr(context, v)),
+                        ),
+                      )
                       .toList(),
                   onChanged: widget.enabled
                       ? (v) => runAction(
@@ -250,7 +282,8 @@ class _SetRowState extends State<WorkoutSetRow> {
                 ),
               ],
             ),
-            if (d['bodyState'] == '明显疼痛') const Text('可以先放慢节奏或休息，留意身体感受。'),
+            if (d['bodyState'] == '明显疼痛')
+              Text(tr(context, "可以先放慢节奏或休息，留意身体感受。")),
             LabeledTextField(
               controller: fields['note'],
               enabled: widget.enabled,
@@ -262,7 +295,7 @@ class _SetRowState extends State<WorkoutSetRow> {
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: Text(
-                  error!,
+                  tr(context, error!),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -281,7 +314,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                             setState(
                               () => error = e is FormatException
                                   ? e.message
-                                  : '保存失败，请重试',
+                                  : "保存失败，请重试",
                             );
                           }
                         }
@@ -294,7 +327,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                         child: CircularProgressIndicator(),
                       )
                     : const Icon(Icons.check),
-                label: const Text('完成当前组'),
+                label: Text(tr(context, "完成当前组")),
               )
             else
               TextButton(
@@ -307,7 +340,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                           'completedAt': null,
                         }),
                       ),
-                child: const Text('撤销完成'),
+                child: Text(tr(context, "撤销完成")),
               ),
           ],
         ),

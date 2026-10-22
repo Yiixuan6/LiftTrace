@@ -75,3 +75,7 @@ check-reminder-apk.ps1在QA及正式release构建后、交付前检查实际资�
 ## 0.2.10 当前发布
 
 正式版和正常QA均使用既有签名，0.2.10+12；手机日常入口已迁为正式app.lianji.training，旧QA0.2.9和design保留。导出命名通过原生app-info通道读取当前标签，不需要dart-define或新依赖；新原生方法必须随APK更新，不能仅热重载Dart。当前静态检查及59回归、双Release/资源门禁、正式安装与完整恢复核对通过；release仅保留最新十文件。
+
+## 0.2.11 多语言构建
+
+无需新依赖或联网翻译服务；assets/translations目录须在pubspec声明。正常QA/正式Release均使用原签名，实际APK内en/zh_Hant JSON与源码逐字节核对，通知资源门禁保持。独立设备专项使用scripts/run-localization-device-test.ps1，固定.qa.design、先aapt严核实际包名、测试--no-uninstall，临时UUID SQLite及标签二次保护。当前新包0.2.11+13；手机正式更新状态见PROJECT_STATUS，不把构建成功当已安装。公开GitHub Release不随本地构建自动变化。

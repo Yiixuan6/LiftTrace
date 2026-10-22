@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,13 +13,13 @@ class TemplatesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = ref.watch(controllerProvider);
     return PageBody(
-      title: '训练模板',
-      subtitle: '示例可编辑，仅作记录结构参考，不是个性化训练处方。',
+      title: tr(context, "训练模板"),
+      subtitle: tr(context, "示例可编辑，仅作记录结构参考，不是个性化训练处方。"),
       children: [
         FilledButton.icon(
           onPressed: () => context.push('/templates/new'),
           icon: const Icon(Icons.add),
-          label: const Text('创建模板'),
+          label: Text(tr(context, "创建模板")),
         ),
         ...c.data.templates
             .where((t) => !t.deleted)
@@ -33,7 +34,11 @@ class TemplatesPage extends ConsumerWidget {
                         t.name,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      Text('${(t.data['exercises'] as List).length} 个动作'),
+                      Text(
+                        tr(context, "{0} 个动作", [
+                          (t.data['exercises'] as List).length,
+                        ]),
+                      ),
                       Wrap(
                         spacing: 8,
                         children: [
@@ -43,12 +48,14 @@ class TemplatesPage extends ConsumerWidget {
                               if (context.mounted) context.go('/train/active');
                             }),
                             child: Text(
-                              c.data.active == null ? '开始' : '继续已有训练',
+                              c.data.active == null
+                                  ? tr(context, "开始")
+                                  : tr(context, "继续已有训练"),
                             ),
                           ),
                           TextButton(
                             onPressed: () => context.push('/templates/${t.id}'),
-                            child: const Text('编辑'),
+                            child: Text(tr(context, "编辑")),
                           ),
                           TextButton(
                             onPressed: () => runAction(
@@ -56,20 +63,20 @@ class TemplatesPage extends ConsumerWidget {
                               () => c.change(
                                 (d) => d.templates.add(
                                   WorkoutTemplate.create(
-                                    '${t.name} 副本',
+                                    tr(context, "{0} 副本", [t.name]),
                                     t.freshExercises(),
                                   ),
                                 ),
                               ),
                             ),
-                            child: const Text('复制'),
+                            child: Text(tr(context, "复制")),
                           ),
                           TextButton(
                             onPressed: () async {
                               if (await confirm(
                                     context,
-                                    '删除模板？',
-                                    '已有历史快照不受影响，对应周安排将设为空。',
+                                    tr(context, "删除模板？"),
+                                    tr(context, "已有历史快照不受影响，对应周安排将设为空。"),
                                   ) &&
                                   context.mounted) {
                                 await runAction(
@@ -85,7 +92,7 @@ class TemplatesPage extends ConsumerWidget {
                                 );
                               }
                             },
-                            child: const Text('删除'),
+                            child: Text(tr(context, "删除")),
                           ),
                         ],
                       ),
@@ -139,7 +146,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
   Widget build(BuildContext context) => Form(
     key: formKey,
     child: PageBody(
-      title: widget.id == 'new' ? '创建模板' : '编辑模板',
+      title: widget.id == 'new' ? tr(context, "创建模板") : tr(context, "编辑模板"),
       children: [
         LabeledTextField(controller: name, label: '模板名称'),
         ...moves.indexed.map((pair) {
@@ -172,7 +179,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
                           validator: (v) {
                             final n = int.tryParse(v ?? '');
                             return n == null || n < 1 || n > 100
-                                ? '请输入 1–100 组'
+                                ? tr(context, "请输入 1–100 组")
                                 : null;
                           },
                           onChanged: (v) {
@@ -216,7 +223,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
                                       !n.isFinite ||
                                       n < 0 ||
                                       (p.$1 == 'reps' && n != n.roundToDouble())
-                                  ? '请输入有效数值'
+                                  ? tr(context, "请输入有效数值")
                                   : null;
                             },
                             onChanged: (v) {
@@ -243,7 +250,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
                           validator: (v) {
                             final n = int.tryParse(v ?? '');
                             return n == null || n < 1 || n > 86400
-                                ? '请输入 1–86400 秒'
+                                ? tr(context, "请输入 1–86400 秒")
                                 : null;
                           },
                           onChanged: (v) {
@@ -259,7 +266,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
                   Wrap(
                     children: [
                       IconButton(
-                        tooltip: '上移动作',
+                        tooltip: tr(context, "上移动作"),
                         onPressed: i == 0
                             ? null
                             : () => setState(() {
@@ -269,7 +276,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
                         icon: const Icon(Icons.arrow_upward),
                       ),
                       IconButton(
-                        tooltip: '删除动作',
+                        tooltip: tr(context, "删除动作"),
                         onPressed: () => setState(() => moves.removeAt(i)),
                         icon: const Icon(Icons.delete_outline),
                       ),
@@ -288,7 +295,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
             }
           },
           icon: const Icon(Icons.add),
-          label: const Text('添加动作'),
+          label: Text(tr(context, "添加动作")),
         ),
         if (error != null) ErrorState(message: error!),
         FilledButton(
@@ -297,7 +304,7 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
               : () async {
                   if (!(formKey.currentState?.validate() ?? false)) return;
                   if (name.text.trim().isEmpty || moves.isEmpty) {
-                    setState(() => error = '请填写名称并添加至少一个动作');
+                    setState(() => error = "请填写名称并添加至少一个动作");
                     return;
                   }
                   setState(() => busy = true);
@@ -320,11 +327,11 @@ class _TemplateEditorState extends ConsumerState<TemplateEditor> {
                     });
                     if (context.mounted) context.pop();
                   } catch (_) {
-                    if (mounted) setState(() => error = '保存失败，请重试');
+                    if (mounted) setState(() => error = "保存失败，请重试");
                   }
                   if (mounted) setState(() => busy = false);
                 },
-          child: Text(busy ? '保存中…' : '保存模板'),
+          child: Text(busy ? tr(context, "保存中…") : tr(context, "保存模板")),
         ),
       ],
     ),
@@ -338,8 +345,8 @@ class SchedulePage extends ConsumerWidget {
     final c = ref.watch(controllerProvider),
         templates = c.data.templates.where((t) => !t.deleted).toList();
     return PageBody(
-      title: '每周安排',
-      subtitle: '每周从星期一开始。选择休息日或一个模板。',
+      title: tr(context, "每周安排"),
+      subtitle: tr(context, "每周从星期一开始。选择休息日或一个模板。"),
       children: List.generate(
         7,
         (i) => Card(
@@ -349,7 +356,7 @@ class SchedulePage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  '星期${'一二三四五六日'[i]}',
+                  AppStrings.of(context).weekday(i + 1),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 DropdownButton<String>(
@@ -359,7 +366,10 @@ class SchedulePage extends ConsumerWidget {
                       ? c.data.schedule['${i + 1}'] as String
                       : 'rest',
                   items: [
-                    const DropdownMenuItem(value: 'rest', child: Text('休息日')),
+                    DropdownMenuItem(
+                      value: 'rest',
+                      child: Text(tr(context, "休息日")),
+                    ),
                     ...templates.map(
                       (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
                     ),

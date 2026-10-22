@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:flutter/widgets.dart';
+import '../l10n/app_strings.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
@@ -30,10 +33,56 @@ class RestReminderStatus {
   }
 }
 
-class RestReminders {
-  RestReminders({bool? isAndroid, this.onOpenRest})
+class RestReminders with WidgetsBindingObserver {
+  RestReminders({bool? isAndroid, this.onOpenRest, this.languagePreference})
     : _isAndroid = isAndroid ?? Platform.isAndroid;
   final bool _isAndroid;
+  final String? Function()? languagePreference;
+  AppStrings _strings = AppStrings(AppStrings.simplified);
+  DateTime? _scheduledDeadline;
+  bool _observingLocale = false;
+
+  Future<void> _loadLanguage() async {
+    final preference = languagePreference?.call();
+    final locale =
+        AppStrings.preferred(preference) ??
+        AppStrings.resolve(WidgetsBinding.instance.platformDispatcher.locale);
+    _strings = await AppStrings.load(locale);
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (languagePreference?.call() == 'system') {
+      unawaited(refreshLanguage().catchError((Object _) {}));
+    }
+  }
+
+  Future<void> refreshLanguage() async {
+    if (!_isAndroid) return;
+    await _loadLanguage();
+    if (!initialized) return;
+    await _createChannel();
+    final deadline = _scheduledDeadline;
+    if (deadline != null && deadline.isAfter(DateTime.now())) {
+      await schedule(deadline);
+    }
+  }
+
+  Future<void> _createChannel() async {
+    await _android?.createNotificationChannel(
+      AndroidNotificationChannel(
+        channelId,
+        _strings.text('组间休息 · 弹出与震动'),
+        description: _strings.text('完成一组后的休息到时提醒，可在其他应用中显示'),
+        importance: Importance.high,
+        enableVibration: true,
+        vibrationPattern: vibrationPattern,
+        playSound: true,
+        showBadge: false,
+      ),
+    );
+  }
+
   final void Function()? onOpenRest;
   static const notificationId = 71;
   // Channel behavior is immutable on Android. Keep the old channel untouched.
@@ -70,6 +119,7 @@ class RestReminders {
   }
 
   Future<void> _initializePlugin() async {
+    await _loadLanguage();
     tzdata.initializeTimeZones();
     await plugin.initialize(
       const InitializationSettings(
@@ -79,18 +129,11 @@ class RestReminders {
         if (response.payload == 'rest') onOpenRest?.call();
       },
     );
-    await _android?.createNotificationChannel(
-      AndroidNotificationChannel(
-        channelId,
-        '组间休息 · 弹出与震动',
-        description: '完成一组后的休息到时提醒，可在其他应用中显示',
-        importance: Importance.high,
-        enableVibration: true,
-        vibrationPattern: vibrationPattern,
-        playSound: true,
-        showBadge: false,
-      ),
-    );
+    await _createChannel();
+    if (!_observingLocale) {
+      WidgetsBinding.instance.addObserver(this);
+      _observingLocale = true;
+    }
     initialized = true;
   }
 
@@ -171,6 +214,7 @@ class RestReminders {
   Future<RestReminderStatus> schedule(DateTime deadline) async {
     await initialize();
     if (!initialized) return const RestReminderStatus();
+    await _loadLanguage();
     await cancel();
     if (!deadline.isAfter(DateTime.now())) return status();
     final android = plugin
@@ -180,14 +224,14 @@ class RestReminders {
     final exact = await android?.canScheduleExactNotifications() ?? false;
     await plugin.zonedSchedule(
       notificationId,
-      '休息结束',
-      '按自己的节奏，继续下一组。',
+      _strings.text('休息结束'),
+      _strings.text('按自己的节奏，继续下一组。'),
       tz.TZDateTime.from(deadline, tz.UTC),
       NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
-          '组间休息 · 弹出与震动',
-          channelDescription: '完成一组后的休息到时提醒，可在其他应用中显示',
+          _strings.text('组间休息 · 弹出与震动'),
+          channelDescription: _strings.text('完成一组后的休息到时提醒，可在其他应用中显示'),
           importance: Importance.high,
           priority: Priority.high,
           enableVibration: true,
@@ -206,10 +250,17 @@ class RestReminders {
           : AndroidScheduleMode.inexactAllowWhileIdle,
       payload: 'rest',
     );
+    _scheduledDeadline = deadline;
     return status();
   }
 
+  void dispose() {
+    if (_observingLocale) WidgetsBinding.instance.removeObserver(this);
+    _observingLocale = false;
+  }
+
   Future<void> cancel() async {
+    _scheduledDeadline = null;
     if (initialized) await plugin.cancel(notificationId);
   }
 }

@@ -60,6 +60,7 @@ void main() {
     reminders = RestReminders(isAndroid: true);
   });
   tearDown(() {
+    reminders.dispose();
     debugDefaultTargetPlatformOverride = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
@@ -181,4 +182,32 @@ void main() {
           .setMockMethodCallHandler(settings, null);
     }
   });
+  test(
+    'reminders change language without changing the pending deadline or notification identity',
+    () async {
+      var language = 'en';
+      reminders.dispose();
+      reminders = RestReminders(
+        isAndroid: true,
+        languagePreference: () => language,
+      );
+      final deadline = DateTime.now().add(const Duration(minutes: 2));
+      await reminders.schedule(deadline);
+      final english =
+          calls.lastWhere((c) => c.method == 'zonedSchedule').arguments as Map;
+      expect(english['title'], 'Rest complete');
+      language = 'zh_Hant';
+      await reminders.refreshLanguage();
+      final traditional =
+          calls.lastWhere((c) => c.method == 'zonedSchedule').arguments as Map;
+      expect(traditional['title'], '休息結束');
+      expect(traditional['id'], english['id']);
+      expect(traditional['scheduledDateTime'], english['scheduledDateTime']);
+      await reminders.cancel();
+      final count = calls.where((c) => c.method == 'zonedSchedule').length;
+      language = 'en';
+      await reminders.refreshLanguage();
+      expect(calls.where((c) => c.method == 'zonedSchedule').length, count);
+    },
+  );
 }

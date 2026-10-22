@@ -34,6 +34,11 @@ for name in [stem+'-source.zip', stem+'-evidence.zip']:
             assert 'assets/licenses/fontawesome.txt' in archive.namelist(), 'Recent icon attribution missing'
             assert 'assets/shaders/liquid_glass.frag' in archive.namelist(), 'Liquid refraction shader source missing'
             assert 'lib/ui/liquid_glass.dart' in archive.namelist(), 'Liquid surface implementation missing'
+            assert 'lib/l10n/app_strings.dart' in archive.namelist(), 'Localization delegate missing'
+            assert 'assets/translations/en.json' in archive.namelist(), 'English messages missing'
+            assert 'assets/translations/zh_Hant.json' in archive.namelist(), 'Traditional Chinese messages missing'
+            assert 'test/localization_test.dart' in archive.namelist(), 'Locale and data preservation tests missing'
+            assert 'integration_test/localization_test.dart' in archive.namelist(), 'Native localization fixture missing'
             assert 'docs/REST_REMINDERS.md' in archive.namelist(), 'Cross-app reminder handoff missing'
             assert 'test/reminders_test.dart' in archive.namelist(), 'Notification regression missing'
             assert 'test/rest_workflow_test.dart' in archive.namelist(), 'Rest workflow regression missing'
@@ -73,7 +78,7 @@ manifest = {
     'status': 'signed_release_partial_device_acceptance' if flow else 'signed_release_device_acceptance_pending',
     'applicationId': 'app.lianji.training', 'version': version+'+'+build,
     'packageRoles': {'formal': 'app.lianji.training', 'existingPhoneQa': 'app.lianji.training.qa', 'currentDailyApp': 'app.lianji.training'},
-    'currentDailyAppVersion': '0.2.10+12',
+    'currentDailyAppVersion': (json.loads(log('localization-0.2.11/report.json') or '{}').get('phoneInstalledVersion', '0.2.10+12')),
     'retainedPhoneQaVersion': '0.2.9+11',
     'visualEvidenceBaselineVersion': '0.2.9+11',
     'minimumAndroidApi': 26, 'targetAndroidApi': 36,
@@ -129,6 +134,7 @@ manifest = {
     'visualDesignQaPassed': 'final result: passed' in (root/'design-qa.md').read_text(encoding='utf-8'),
     'allAcceptanceItemsPassed': False,
     'editorialPagesVersion': '0.2.9+11',
+    'multilingualEvidence': json.loads(log('localization-0.2.11/report.json') or '{}'),
     'exportNamingAndFormalMigrationEvidence': json.loads(log('export-migration-0.2.10/report.json') or '{}'),
     'restReleasePriorVersion': '0.2.9+11',
     'restReleasePriorEvidence': json.loads(log('rest-fix-0.2.9/release-device.json') or '{}'),

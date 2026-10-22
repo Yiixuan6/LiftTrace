@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,20 +33,20 @@ class _BodyState extends ConsumerState<BodyPage> {
       );
     final points = records.where((m) => m.data[metric] != null).toList();
     return PageBody(
-      title: '身体数据',
-      subtitle: '围度可留空，缺失值不按零计算。',
+      title: tr(context, "身体数据"),
+      subtitle: tr(context, "围度可留空，缺失值不按零计算。"),
       children: [
         FilledButton.icon(
           onPressed: () => editMeasurement(context, c),
           icon: const Icon(Icons.add),
-          label: const Text('记录身体数据'),
+          label: Text(tr(context, "记录身体数据")),
         ),
         Wrap(
           spacing: 8,
           children: bodyFields
               .map(
                 (p) => ChoiceChip(
-                  label: Text(p.$2),
+                  label: Text(tr(context, p.$2)),
                   selected: metric == p.$1,
                   onSelected: (_) => setState(() => metric = p.$1),
                 ),
@@ -79,7 +80,8 @@ class _BodyState extends ConsumerState<BodyPage> {
               ),
             ),
           ),
-        if (records.isEmpty) const EmptyState(message: '记录第一条身体数据，慢慢观察变化'),
+        if (records.isEmpty)
+          EmptyState(message: tr(context, "记录第一条身体数据，慢慢观察变化")),
         ...records.reversed.map(
           (m) => Card(
             child: ListTile(
@@ -87,15 +89,19 @@ class _BodyState extends ConsumerState<BodyPage> {
               subtitle: Text(
                 bodyFields
                     .where((p) => m.data[p.$1] != null)
-                    .map((p) => '${p.$2}：${m.data[p.$1]}')
+                    .map((p) => '${tr(context, p.$2)}: ${m.data[p.$1]}')
                     .join('\n'),
               ),
               onTap: () => editMeasurement(context, c, existing: m),
               trailing: IconButton(
-                tooltip: '删除身体记录',
+                tooltip: tr(context, "删除身体记录"),
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
-                  if (await confirm(context, '删除这条身体记录？', '删除后趋势会更新。') &&
+                  if (await confirm(
+                        context,
+                        tr(context, "删除这条身体记录？"),
+                        tr(context, "删除后趋势会更新。"),
+                      ) &&
                       context.mounted) {
                     await runAction(
                       context,
@@ -139,7 +145,7 @@ Future<void> editMeasurement(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, refresh) => AlertDialog(
-        title: const Text('身体数据'),
+        title: Text(tr(context, "身体数据")),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -170,7 +176,7 @@ Future<void> editMeasurement(
               ),
               if (error != null)
                 Text(
-                  error!,
+                  tr(context, error!),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
             ],
@@ -179,7 +185,7 @@ Future<void> editMeasurement(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(tr(context, "取消")),
           ),
           FilledButton(
             onPressed: () {
@@ -190,25 +196,25 @@ Future<void> editMeasurement(
                     m.id != existingId &&
                     m.data['date'] == values['date'],
               )) {
-                refresh(() => error = '当天已有记录，请编辑原记录');
+                refresh(() => error = "当天已有记录，请编辑原记录");
                 return;
               }
               for (final p in bodyFields) {
                 final raw = fields[p.$1]!.text;
                 final n = double.tryParse(raw);
                 if (raw.isNotEmpty && (n == null || !n.isFinite || n <= 0)) {
-                  refresh(() => error = '请填写大于 0 的数值，或留空');
+                  refresh(() => error = "请填写大于 0 的数值，或留空");
                   return;
                 }
                 values[p.$1] = n;
               }
               if (bodyFields.every((p) => values[p.$1] == null)) {
-                refresh(() => error = '至少填写一项');
+                refresh(() => error = "至少填写一项");
                 return;
               }
               Navigator.pop(context, values);
             },
-            child: const Text('保存'),
+            child: Text(tr(context, "保存")),
           ),
         ],
       ),

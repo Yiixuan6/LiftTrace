@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -51,7 +52,7 @@ class _BackupState extends ConsumerState<BackupPage> {
         if (status['error'] != null) error = status['error'] as String;
       });
     } catch (_) {
-      if (mounted) setState(() => error = '无法读取安全凭据，请重新配置');
+      if (mounted) setState(() => error = "无法读取安全凭据，请重新配置");
     }
   }
 
@@ -77,7 +78,7 @@ class _BackupState extends ConsumerState<BackupPage> {
         setState(
           () => error = e is FormatException
               ? e.message
-              : '操作失败，请检查网络、权限或文件后重试。本地训练数据保留。',
+              : "操作失败，请检查网络、权限或文件后重试。本地训练数据保留。",
         );
       }
     }
@@ -99,8 +100,16 @@ class _BackupState extends ConsumerState<BackupPage> {
     final data = BackupCodec.decode(raw);
     final yes = await confirm(
       context,
-      '替换本地数据？',
-      '备份包含 ${data.sessions.where((s) => !s.deleted).length} 次训练、${data.templates.where((t) => !t.deleted).length} 个模板、${data.measurements.where((m) => !m.deleted).length} 条身体记录。\n\n完整恢复会替换本地业务数据及外观偏好，先自动保存恢复前备份。自动备份将关闭，设备提醒不迁移。',
+      tr(context, "替换本地数据？"),
+      tr(
+        context,
+        "备份包含 {0} 次训练、{1} 个模板、{2} 条身体记录。\n\n完整恢复会替换本地业务数据及外观偏好，先自动保存恢复前备份。自动备份将关闭，设备提醒不迁移。",
+        [
+          data.sessions.where((s) => !s.deleted).length,
+          data.templates.where((t) => !t.deleted).length,
+          data.measurements.where((m) => !m.deleted).length,
+        ],
+      ),
     );
     if (!yes) return;
     final dir = await getApplicationSupportDirectory();
@@ -109,33 +118,38 @@ class _BackupState extends ConsumerState<BackupPage> {
     await ref
         .read(controllerProvider)
         .restore(raw, Directory('${dir.path}/before-restore'));
-    if (mounted) setState(() => message = '恢复完成。恢复前备份保留在应用私有目录，可用下方入口导出。');
+    if (mounted) setState(() => message = "恢复完成。恢复前备份保留在应用私有目录，可用下方入口导出。");
   }
 
   Future<void> exportFile(String content, String extension) async {
     final name = await exportFilename(extension);
+    if (!mounted) return;
     final result = await FilePicker.saveFile(
       mimeType: extension == 'json' ? 'application/json' : 'text/csv',
-      dialogTitle: '导出文件',
+      dialogTitle: tr(context, "导出文件"),
       fileName: name,
       type: FileType.custom,
       allowedExtensions: [extension],
       bytes: Uint8List.fromList(utf8.encode(content)),
     );
-    if (result != null && mounted) setState(() => message = '文件已导出');
+    if (result != null && mounted) setState(() => message = "文件已导出");
   }
 
   @override
   Widget build(BuildContext context) {
     final c = ref.watch(controllerProvider);
     return PageBody(
-      title: '备份与恢复',
-      subtitle: '完整 JSON 用于恢复，CSV 用于分析。数据只在你导出或启用 WebDAV 后传出。',
+      title: tr(context, "备份与恢复"),
+      subtitle: tr(context, "完整 JSON 用于恢复，CSV 用于分析。数据只在你导出或启用 WebDAV 后传出。"),
       children: [
-        if (busy) const LinearProgressIndicator(semanticsLabel: '正在处理备份操作'),
+        if (busy)
+          LinearProgressIndicator(semanticsLabel: tr(context, "正在处理备份操作")),
         if (error != null) ErrorState(message: error!),
-        if (message != null) Text(message!),
-        Text('本地文件', style: Theme.of(context).textTheme.titleLarge),
+        if (message != null) Text(tr(context, message!)),
+        Text(
+          tr(context, "本地文件"),
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         EqualActionGroup(
           key: const ValueKey('local-file-actions'),
           labels: const ['导出完整 JSON', '导出分析 CSV', '从 JSON 完整恢复', '导出最近恢复前备份'],
@@ -146,14 +160,14 @@ class _BackupState extends ConsumerState<BackupPage> {
                   : () => work(
                       () => exportFile(BackupCodec.encode(c.data), 'json'),
                     ),
-              child: const Text('导出完整 JSON'),
+              child: Text(tr(context, "导出完整 JSON")),
             ),
             OutlinedButton(
               onPressed: busy
                   ? null
                   : () =>
                         work(() => exportFile(BackupCodec.csv(c.data), 'csv')),
-              child: const Text('导出分析 CSV'),
+              child: Text(tr(context, "导出分析 CSV")),
             ),
             OutlinedButton(
               onPressed: busy
@@ -177,7 +191,7 @@ class _BackupState extends ConsumerState<BackupPage> {
                       }
                       await restore(utf8.decode(bytes));
                     }),
-              child: const Text('从 JSON 完整恢复'),
+              child: Text(tr(context, "从 JSON 完整恢复")),
             ),
             OutlinedButton(
               onPressed: busy
@@ -203,19 +217,24 @@ class _BackupState extends ConsumerState<BackupPage> {
                         'json',
                       );
                     }),
-              child: const Text('导出最近恢复前备份'),
+              child: Text(tr(context, "导出最近恢复前备份")),
             ),
           ],
         ),
-        const Card(
+        Card(
           child: Padding(
             padding: EdgeInsets.all(16),
-            child: Text('旧网站追加导入：待取得网站源码和真实 JSON 后实现。当前仅支持练迹完整备份格式。'),
+            child: Text(
+              tr(context, "旧网站追加导入：待取得网站源码和真实 JSON 后实现。当前仅支持练迹完整备份格式。"),
+            ),
           ),
         ),
         Text('WebDAV', style: Theme.of(context).textTheme.titleLarge),
-        const Text(
-          '单手机备份与换机恢复。请填写已存在、允许 PROPFIND / PUT / GET / MOVE 的 HTTPS 目录。凭据保存在设备安全存储，不进入备份。',
+        Text(
+          tr(
+            context,
+            "单手机备份与换机恢复。请填写已存在、允许 PROPFIND / PUT / GET / MOVE 的 HTTPS 目录。凭据保存在设备安全存储，不进入备份。",
+          ),
         ),
         LabeledTextField(
           controller: url,
@@ -250,10 +269,10 @@ class _BackupState extends ConsumerState<BackupPage> {
                       );
                       setState(() {
                         configured = true;
-                        message = '配置已保存在设备安全存储';
+                        message = "配置已保存在设备安全存储";
                       });
                     }),
-              child: const Text('保存配置'),
+              child: Text(tr(context, "保存配置")),
             ),
             OutlinedButton(
               onPressed: busy || !configured
@@ -261,10 +280,10 @@ class _BackupState extends ConsumerState<BackupPage> {
                   : () => work(
                       () => withClient((client) async {
                         await client.test();
-                        setState(() => message = '连接成功，目录可读取；写入权限将在备份时验证');
+                        setState(() => message = "连接成功，目录可读取；写入权限将在备份时验证");
                       }),
                     ),
-              child: const Text('测试连接'),
+              child: Text(tr(context, "测试连接")),
             ),
             OutlinedButton(
               onPressed: busy || !configured
@@ -280,11 +299,11 @@ class _BackupState extends ConsumerState<BackupPage> {
                         });
                         setState(() {
                           lastSuccess = now;
-                          message = '上传成功，最终文件回读校验通过';
+                          message = "上传成功，最终文件回读校验通过";
                         });
                       }),
                     ),
-              child: const Text('立即备份'),
+              child: Text(tr(context, "立即备份")),
             ),
             OutlinedButton(
               onPressed: busy || !configured
@@ -298,17 +317,17 @@ class _BackupState extends ConsumerState<BackupPage> {
                         configured = false;
                         backups = [];
                         valid = {};
-                        message = '已移除本机凭据，远端历史保留';
+                        message = "已移除本机凭据，远端历史保留";
                       });
                     }),
-              child: const Text('移除配置'),
+              child: Text(tr(context, "移除配置")),
             ),
           ],
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('自动备份'),
-          subtitle: const Text('默认关闭。联网后合并数据变化，后台重试，不承诺实时执行。无变化时跳过。'),
+          title: Text(tr(context, "自动备份")),
+          subtitle: Text(tr(context, "默认关闭。联网后合并数据变化，后台重试，不承诺实时执行。无变化时跳过。")),
           value: c.data.settings['autoBackup'] == true,
           onChanged: busy || !configured
               ? null
@@ -321,7 +340,7 @@ class _BackupState extends ConsumerState<BackupPage> {
                   }
                 }),
         ),
-        Text('上次成功：${lastSuccess ?? '暂无'}'),
+        Text(tr(context, "上次成功：{0}", [lastSuccess ?? tr(context, "暂无")])),
         OutlinedButton.icon(
           onPressed: busy || !configured
               ? null
@@ -337,9 +356,9 @@ class _BackupState extends ConsumerState<BackupPage> {
                   }),
                 ),
           icon: const Icon(Icons.refresh),
-          label: const Text('列出远端备份'),
+          label: Text(tr(context, "列出远端备份")),
         ),
-        const Text('远端历史不会自动删除。未校验文件须先下载验证，损坏文件不会开放恢复。'),
+        Text(tr(context, "远端历史不会自动删除。未校验文件须先下载验证，损坏文件不会开放恢复。")),
         ...backups.map(
           (b) => Card(
             child: Padding(
@@ -349,11 +368,11 @@ class _BackupState extends ConsumerState<BackupPage> {
                 children: [
                   Text(b.name),
                   Text(
-                    '${b.bytes ?? '未知'} bytes · ${valid[b.name] == true
-                        ? '校验可用'
+                    '${b.bytes ?? tr(context, "未知")} bytes · ${valid[b.name] == true
+                        ? tr(context, "校验可用")
                         : valid[b.name] == false
-                        ? '损坏或不可读取'
-                        : '待校验'}',
+                        ? tr(context, "损坏或不可读取")
+                        : tr(context, "待校验")}',
                   ),
                   Wrap(
                     spacing: 8,
@@ -372,7 +391,7 @@ class _BackupState extends ConsumerState<BackupPage> {
                                   }
                                 }),
                               ),
-                        child: const Text('验证文件'),
+                        child: Text(tr(context, "验证文件")),
                       ),
                       FilledButton.tonal(
                         onPressed: busy || valid[b.name] != true
@@ -382,7 +401,7 @@ class _BackupState extends ConsumerState<BackupPage> {
                                   await restore(await client.download(b));
                                 }),
                               ),
-                        child: const Text('恢复此备份'),
+                        child: Text(tr(context, "恢复此备份")),
                       ),
                     ],
                   ),

@@ -1,5 +1,19 @@
 # 下一位维护者接手
 
+## v0.2公开更新准备
+
+用户批准同步三语言及备份读取修复到GitHub，公开v0.2对应内部0.2.11+13。发布正文docs/releases/v0.2.md；公开附件仅artifacts/github-release/v0.2/LiftTrace-v0.2.apk及SHA256SUMS.txt，APK是已验证正式包的逐字节副本。用户自行网页创建v0.2标签和Release，不自动登录CLI或发布；后续状态见S088，不把源码推送/附件准备记为Release已发布。旧v0.1标签及附件保留。
+
+## 0.2.11 多语言（最新）
+
+先读LOCALIZATION、PROJECT_STATUS、S082起及artifacts/localization-0.2.11/report.json。我的→语言支持简体/繁体/English/system；默认无字段保持简体，系统不支持回退简体。翻译只在明确UI/固定分类调用，不翻译用户名称备注或保存值；字段key保持原值。词典离线预加载，语言设置仓储事务保存并纳入备份，原格式/schema不变；restPresetSeconds为既有字段，本轮补齐白名单，避免已写入后重启/恢复被拒。提醒同ID/channel/未来截止时刻更新文案，取消后不重排。
+
+66回归/零问题/156布局24合成图通过；独立.design临时SQLite真实三语/输入/休息/记录/重开13秒通过，--no-uninstall及包名预核。两Release沿用原签名，实际APK翻译资源/通知图标及receiver通过。真机通知多语送达/其他系统未重验。
+
+正式用户已明确允许在无法先取得今日备份时例外保留更新。现已非流式-r同签名成功更新0.2.11+13，未卸载/清库或恢复昨日快照；正常首页、冷启动原训练、语言四选项可用，维护未改用户语言。今日练迹-2026-10-22.json保存在手机根目录和artifacts/private/health-exports/2026-10-22，逐字节相同及真实Codec解码/往返/损坏拒绝通过。昨日备份所有原实体/ID/创建时间/字段一致；没有今日安装前快照，不能称同日全payload前后一致。
+
+旧版保护页已定位：今日原样备份由旧Codec拒绝，内存仅移除既有restPresetSeconds就可被旧Codec接受，新版不修改原数据即接受。源码/数据库仅补白名单，不删除偏好或重建数据库。详见S086–S087及user-update.json。真实备份仍禁止进入公开包、日志、截图；Github v0.1未动，多语言通知真实投递/其他系统仍待验。
+
 ## README截图
 
 docs/screenshots六张PNG为2026-10-22当前源码的演示数据页面采集，README采用两行三列表格及相对图片路径。临时采集夹具在.tooling/readme_screenshots_test.dart，基于visual_capture_test缩减为六页面并注入提醒就绪状态；只用MemoryTrainingRepository，不是手机截图或系统权限证据。原始输出及联系图/哈希在artifacts/readme-preview，不覆盖原版本验收图。更新截图须继续使用合成记录，不读取真实训练库；业务版本/Release附件未改。

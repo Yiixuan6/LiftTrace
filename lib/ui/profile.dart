@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,19 +29,21 @@ class ProfilePage extends ConsumerWidget {
     );
     return PageBody(
       root: true,
-      title: '我的',
-      subtitle: '属于你的训练，也属于你的数据。',
+      title: tr(context, "我的"),
+      subtitle: tr(context, "属于你的训练，也属于你的数据。"),
       children: [
         Card(
           child: ListTile(
             leading: const Icon(Icons.person_outline, size: 32),
-            title: Text(c.data.settings['nickname'] as String? ?? '训练者'),
-            subtitle: const Text('本地昵称 · 数据保存在这台设备上'),
+            title: Text(
+              c.data.settings['nickname'] as String? ?? tr(context, "训练者"),
+            ),
+            subtitle: Text(tr(context, "本地昵称 · 数据保存在这台设备上")),
             trailing: const Icon(Icons.edit_outlined),
             onTap: () async {
               final value = await askText(
                 context,
-                '本地昵称',
+                tr(context, "本地昵称"),
                 initial: c.data.settings['nickname'] as String? ?? '',
               );
               if (value != null) {
@@ -49,18 +52,20 @@ class ProfilePage extends ConsumerWidget {
             },
           ),
         ),
-        const SectionHeading('训练与外观偏好'),
+        SectionHeading(tr(context, "训练与外观偏好")),
         MenuGroup(
           children: [
             ListTile(
               leading: const Icon(Icons.flag_outlined),
-              title: const Text('每周训练目标'),
-              subtitle: Text('${c.data.settings['weeklyGoal'] ?? 3} 次'),
+              title: Text(tr(context, "每周训练目标")),
+              subtitle: Text(
+                tr(context, "{0} 次", [c.data.settings['weeklyGoal'] ?? 3]),
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 final value = await askText(
                   context,
-                  '每周目标次数（1–21）',
+                  tr(context, "每周目标次数（1–21）"),
                   initial: '${c.data.settings['weeklyGoal'] ?? 3}',
                 );
                 final goal = int.tryParse(value ?? '');
@@ -69,41 +74,59 @@ class ProfilePage extends ConsumerWidget {
                 }
               },
             ),
-            destination('外观', '品牌与明暗模式', '/appearance', Icons.palette_outlined),
+            ListTile(
+              key: const ValueKey('language-settings'),
+              leading: const Icon(Icons.language_outlined),
+              title: Text(tr(context, '语言')),
+              subtitle: Text(
+                languageName(context, c.data.settings['language'] as String?),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => chooseLanguage(context, c),
+            ),
+            destination(
+              tr(context, "外观"),
+              tr(context, "品牌与明暗模式"),
+              '/appearance',
+              Icons.palette_outlined,
+            ),
           ],
         ),
-        const SectionHeading('身体与数据'),
+        SectionHeading(tr(context, "身体与数据")),
         MenuGroup(
           children: [
             destination(
-              '身体数据',
-              '体重与围度',
+              tr(context, "身体数据"),
+              tr(context, "体重与围度"),
               '/body',
               Icons.monitor_weight_outlined,
             ),
             destination(
-              '备份与恢复',
-              'JSON、CSV 和 WebDAV',
+              tr(context, "备份与恢复"),
+              tr(context, "JSON、CSV 和 WebDAV"),
               '/backup',
               Icons.backup_outlined,
             ),
           ],
         ),
-        const SectionHeading('关于'),
+        SectionHeading(tr(context, "关于")),
         MenuGroup(
           children: [
             ListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('关于练迹'),
-              subtitle: const Text('0.2.10 · 个人离线训练日志'),
+              title: Text(tr(context, "关于练迹")),
+              subtitle: Text(tr(context, "0.2.11 · 个人离线训练日志")),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showAboutDialog(
                 context: context,
-                applicationName: '练迹 · 训练日志',
-                applicationVersion: '0.2.10',
+                applicationName: tr(context, "练迹 · 训练日志"),
+                applicationVersion: '0.2.11',
                 children: [
-                  const Text(
-                    '中文 · 公制 · 周一起始\n数据离线保存在本机，仅显式导出或配置 WebDAV 后传出。\n示例模板可自由修改，不构成个性化处方。',
+                  Text(
+                    tr(
+                      context,
+                      "中文 · 公制 · 周一起始\n数据离线保存在本机，仅显式导出或配置 WebDAV 后传出。\n示例模板可自由修改，不构成个性化处方。",
+                    ),
                   ),
                 ],
               ),
@@ -158,10 +181,14 @@ class ThemeSelector extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        brandNames[brand.index],
+                        tr(context, brandNames[brand.index]),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      Text(selected == brand ? '已选预览' : '查看预览'),
+                      Text(
+                        selected == brand
+                            ? tr(context, "已选预览")
+                            : tr(context, "查看预览"),
+                      ),
                     ],
                   ),
                 ),
@@ -198,8 +225,8 @@ class _AppearanceState extends ConsumerState<AppearancePage> {
         ? Brightness.dark
         : Brightness.light;
     return PageBody(
-      title: '外观',
-      subtitle: '先预览，点击应用后保存。品牌与明暗模式独立设置。',
+      title: tr(context, "外观"),
+      subtitle: tr(context, "先预览，点击应用后保存。品牌与明暗模式独立设置。"),
       children: [
         ThemeSelector(
           selected: brand,
@@ -210,7 +237,7 @@ class _AppearanceState extends ConsumerState<AppearancePage> {
           children: Appearance.values
               .map(
                 (m) => ChoiceChip(
-                  label: Text(appearanceNames[m.index]),
+                  label: Text(tr(context, appearanceNames[m.index])),
                   selected: mode == m,
                   onSelected: (_) => setState(() => previewMode = m),
                 ),
@@ -228,21 +255,21 @@ class _AppearanceState extends ConsumerState<AppearancePage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '下一组，继续积累',
+                      tr(context, "下一组，继续积累"),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 12),
-                    const WorkoutCard(
-                      title: '杠铃卧推',
-                      subtitle: '40 kg · 8 次 · 第 2 组',
+                    WorkoutCard(
+                      title: tr(context, "杠铃卧推"),
+                      subtitle: tr(context, "40 kg · 8 次 · 第 2 组"),
                       emphasis: true,
                     ),
                     FilledButton(
                       onPressed: () {},
-                      child: const Text('完成当前组 · 预览'),
+                      child: Text(tr(context, "完成当前组 · 预览")),
                     ),
                     const SizedBox(height: 12),
-                    const Text('当前只是局部预览'),
+                    Text(tr(context, "当前只是局部预览")),
                   ],
                 ),
               ),
@@ -263,9 +290,60 @@ class _AppearanceState extends ConsumerState<AppearancePage> {
                   );
                   if (mounted) setState(() => busy = false);
                 },
-          child: Text(busy ? '保存中…' : '应用外观'),
+          child: Text(busy ? tr(context, "保存中…") : tr(context, "应用外观")),
         ),
       ],
     );
   }
+}
+
+String languageName(BuildContext context, String? code) => switch (code) {
+  'system' => tr(context, '跟随系统'),
+  'zh_Hant' => '繁體中文',
+  'en' => 'English',
+  _ => '简体中文',
+};
+
+Future<void> chooseLanguage(
+  BuildContext context,
+  AppController controller,
+) async {
+  final selected = controller.data.settings['language'] as String? ?? 'zh_Hans';
+  final value = await showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (context) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(
+                tr(context, '应用语言'),
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              subtitle: Text(tr(context, '界面与提醒语言；训练名称和备注保留原文')),
+            ),
+            for (final code in AppStrings.preferences)
+              ListTile(
+                key: ValueKey('language-$code'),
+                title: Text(languageName(context, code)),
+                subtitle: code == 'system'
+                    ? Text(tr(context, '将使用设备语言，不支持的语言使用简体中文'))
+                    : null,
+                trailing: selected == code ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(context, code),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (value == null || value == selected || !context.mounted) return;
+  await runAction(
+    context,
+    () => controller.change((data) => data.settings['language'] = value),
+  );
 }

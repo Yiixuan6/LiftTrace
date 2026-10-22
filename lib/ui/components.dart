@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'dart:math' show pi, max;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -72,7 +73,7 @@ class AppScaffold extends StatelessWidget {
                         icon: i == 1
                             ? const TrainingNavigationIcon()
                             : Icon(icons[i]),
-                        label: Text(labels[i]),
+                        label: Text(tr(context, labels[i])),
                       ),
                     ),
                   ),
@@ -139,103 +140,133 @@ class GlassNavigationBar extends StatelessWidget {
     ];
     final theme = Theme.of(context);
     final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
-    final height = 56.0 + 18 * (scale - 1).clamp(0, 1);
-    return LiquidGlassSurface(
-      key: const ValueKey('glass-navigation'),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(48),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white.withValues(
-                alpha: theme.brightness == Brightness.light ? .09 : .025,
+    return LayoutBuilder(
+      builder: (context, box) {
+        final width = ((box.maxWidth - 14) / 4).clamp(1.0, double.infinity);
+        var labelHeight = 0.0;
+        for (final label in labels) {
+          final painter = TextPainter(
+            text: TextSpan(
+              text: tr(context, label),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
-              Colors.white.withValues(alpha: .005),
-              theme.colorScheme.primary.withValues(alpha: .012),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(7),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: AnimatedAlign(
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : ThemeTokens.quick,
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment(-1 + selectedIndex * 2 / 3, 0),
-                  child: FractionallySizedBox(
-                    widthFactor: .25,
-                    child: LiquidSelectionLens(child: SizedBox(height: height)),
+            ),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout(maxWidth: width);
+          labelHeight = max(labelHeight, painter.height);
+          painter.dispose();
+        }
+        final height = max(
+          56.0 + 18 * (scale - 1).clamp(0, 1),
+          labelHeight + 34,
+        );
+        return LiquidGlassSurface(
+          key: const ValueKey('glass-navigation'),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(48),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(
+                    alpha: theme.brightness == Brightness.light ? .09 : .025,
                   ),
-                ),
+                  Colors.white.withValues(alpha: .005),
+                  theme.colorScheme.primary.withValues(alpha: .012),
+                ],
               ),
-              RepaintBoundary(
-                child: Row(
-                  children: List.generate(4, (i) {
-                    final selected = i == selectedIndex;
-                    final color = selected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface;
-                    return Expanded(
-                      child: Semantics(
-                        button: true,
-                        selected: selected,
-                        label: labels[i],
-                        child: Tooltip(
-                          message: labels[i],
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              key: ValueKey('main-nav-$i'),
-                              borderRadius: BorderRadius.circular(36),
-                              onTap: () => onDestinationSelected(i),
-                              child: SizedBox(
-                                height: height,
-                                child: ExcludeSemantics(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      i == 1
-                                          ? TrainingNavigationIcon(color: color)
-                                          : Icon(
-                                              selected && i == 0
-                                                  ? Icons.home_rounded
-                                                  : icons[i],
-                                              size: 27,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(7),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: AnimatedAlign(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : ThemeTokens.quick,
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment(-1 + selectedIndex * 2 / 3, 0),
+                      child: FractionallySizedBox(
+                        widthFactor: .25,
+                        child: LiquidSelectionLens(
+                          child: SizedBox(height: height),
+                        ),
+                      ),
+                    ),
+                  ),
+                  RepaintBoundary(
+                    child: Row(
+                      children: List.generate(4, (i) {
+                        final selected = i == selectedIndex;
+                        final color = selected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface;
+                        return Expanded(
+                          child: Semantics(
+                            button: true,
+                            selected: selected,
+                            label: tr(context, labels[i]),
+                            child: Tooltip(
+                              message: tr(context, labels[i]),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  key: ValueKey('main-nav-$i'),
+                                  borderRadius: BorderRadius.circular(36),
+                                  onTap: () => onDestinationSelected(i),
+                                  child: SizedBox(
+                                    height: height,
+                                    child: ExcludeSemantics(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          i == 1
+                                              ? TrainingNavigationIcon(
+                                                  color: color,
+                                                )
+                                              : Icon(
+                                                  selected && i == 0
+                                                      ? Icons.home_rounded
+                                                      : icons[i],
+                                                  size: 27,
+                                                  color: color,
+                                                ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            tr(context, labels[i]),
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
                                               color: color,
+                                              fontSize: 13,
+                                              fontWeight: selected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
                                             ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        labels[i],
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 13,
-                                          fontWeight: selected
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -408,7 +439,7 @@ class FieldCaption extends StatelessWidget {
     children: [
       ExcludeSemantics(
         child: Text(
-          label,
+          tr(context, label),
           key: ValueKey('caption-$label'),
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -417,7 +448,7 @@ class FieldCaption extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 8),
-      Semantics(label: label, child: child),
+      Semantics(label: tr(context, label), child: child),
     ],
   );
 }
@@ -465,7 +496,12 @@ class LabeledTextField extends StatelessWidget {
             enableSuggestions: enableSuggestions,
             decoration: const InputDecoration(),
             onChanged: onChanged,
-            validator: validator,
+            validator: validator == null
+                ? null
+                : (value) {
+                    final error = validator!(value);
+                    return error == null ? null : tr(context, error);
+                  },
           )
         : TextField(
             key: ValueKey('input-$label'),
@@ -507,7 +543,7 @@ class EqualActionGroup extends StatelessWidget {
       var height = 56.0;
       for (final label in labels) {
         final painter = TextPainter(
-          text: TextSpan(text: label, style: style),
+          text: TextSpan(text: tr(context, label), style: style),
           textDirection: Directionality.of(context),
           textScaler: scaler,
         )..layout(maxWidth: max(1, width - 40));
@@ -594,7 +630,9 @@ class ExerciseCard extends StatelessWidget {
     child: ListTile(
       leading: const Icon(Icons.fitness_center),
       title: Text(exercise.name),
-      subtitle: Text('${exercise.muscle} · ${exercise.equipment}'),
+      subtitle: Text(
+        '${tr(context, exercise.muscle)} · ${tr(context, exercise.equipment)}',
+      ),
       onTap: onTap,
       trailing: trailing,
     ),
@@ -650,13 +688,16 @@ class ProgressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('本周目标', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            tr(context, "本周目标"),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
-          Text('已完成 $done 次 / 目标 $goal 次'),
+          Text(tr(context, "已完成 {0} 次 / 目标 {1} 次", [done, goal])),
           const SizedBox(height: 12),
           LinearProgressIndicator(
             value: goal > 0 ? (done / goal).clamp(0, 1) : 0,
-            semanticsLabel: '本周训练进度',
+            semanticsLabel: tr(context, "本周训练进度"),
           ),
         ],
       ),
@@ -690,8 +731,9 @@ class EmptyState extends StatelessWidget {
 class LoadingState extends StatelessWidget {
   const LoadingState({super.key});
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(semanticsLabel: '正在加载'));
+  Widget build(BuildContext context) => Center(
+    child: CircularProgressIndicator(semanticsLabel: tr(context, "正在加载")),
+  );
 }
 
 class ErrorState extends StatelessWidget {
@@ -705,11 +747,11 @@ class ErrorState extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            message,
+            trError(context, message),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
           if (onRetry != null)
-            TextButton(onPressed: onRetry, child: const Text('重试')),
+            TextButton(onPressed: onRetry, child: Text(tr(context, "重试"))),
         ],
       ),
     ),
@@ -740,11 +782,11 @@ Future<bool> confirm(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(tr(context, "取消")),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('确认'),
+            child: Text(tr(context, "确认")),
           ),
         ],
       ),
@@ -765,13 +807,13 @@ Future<String?> askText(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(tr(context, "取消")),
         ),
         FilledButton(
           onPressed: () {
             if (c.text.trim().isNotEmpty) Navigator.pop(context, c.text.trim());
           },
-          child: const Text('保存'),
+          child: Text(tr(context, "保存")),
         ),
       ],
     ),
@@ -791,7 +833,9 @@ Future<void> runAction(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e is FormatException ? e.message : '操作失败，原数据保留，请重试。'),
+          content: Text(
+            e is FormatException ? e.message : tr(context, "操作失败，原数据保留，请重试。"),
+          ),
         ),
       );
     }

@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,14 +35,20 @@ class HomePage extends ConsumerWidget {
         .take(4);
     final colors = Theme.of(context).colorScheme;
     final planTitle =
-        active?.title ?? today?.name ?? (restDay ? '今天是休息日' : '自由训练');
+        active?.title ??
+        today?.name ??
+        (restDay ? tr(context, "今天是休息日") : tr(context, "自由训练"));
     final planSubtitle = active != null
-        ? '${active.completedSets} 组已保存 · 随时继续'
+        ? tr(context, "{0} 组已保存 · 随时继续", [active.completedSets])
         : today != null
-        ? '${today.data['exercises'] is List ? (today.data['exercises'] as List).length : 0} 个动作 · 按自己的节奏开始'
+        ? tr(context, "{0} 个动作 · 按自己的节奏开始", [
+            today.data['exercises'] is List
+                ? (today.data['exercises'] as List).length
+                : 0,
+          ])
         : restDay
-        ? '放松一下，也可以自由记录'
-        : '不必等计划准备好，随时开始';
+        ? tr(context, "放松一下，也可以自由记录")
+        : tr(context, "不必等计划准备好，随时开始");
     return Material(
       color: Colors.transparent,
       child: CustomScrollView(
@@ -60,7 +67,9 @@ class HomePage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           EditorialSectionTitle(
-                            active == null ? '今日训练' : '训练进行中',
+                            active == null
+                                ? tr(context, "今日训练")
+                                : tr(context, "训练进行中"),
                           ),
                           const SizedBox(height: 12),
                           Material(
@@ -177,11 +186,15 @@ class HomePage extends ConsumerWidget {
                                     : Icons.arrow_forward,
                                 size: 27,
                               ),
-                              label: Text(active == null ? '开始训练' : '继续训练'),
+                              label: Text(
+                                active == null
+                                    ? tr(context, "开始训练")
+                                    : tr(context, "继续训练"),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const EditorialSectionTitle('本周目标'),
+                          EditorialSectionTitle(tr(context, "本周目标")),
                           const SizedBox(height: 10),
                           Wrap(
                             crossAxisAlignment: WrapCrossAlignment.end,
@@ -202,7 +215,7 @@ class HomePage extends ConsumerWidget {
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 3),
                                 child: Text(
-                                  '/ $goal 次',
+                                  tr(context, "/ {0} 次", [goal]),
                                   style: TextStyle(
                                     fontSize: 23,
                                     color: colors.onSurface,
@@ -237,8 +250,11 @@ class HomePage extends ConsumerWidget {
                                       : 0,
                                   color: Colors.white,
                                   backgroundColor: Colors.transparent,
-                                  semanticsLabel:
-                                      '本周训练进度，已完成${week.sessions}次，目标$goal次',
+                                  semanticsLabel: tr(
+                                    context,
+                                    "本周训练进度，已完成{0}次，目标{1}次",
+                                    [week.sessions, goal],
+                                  ),
                                 ),
                               ),
                             ),
@@ -249,18 +265,22 @@ class HomePage extends ConsumerWidget {
                             color: colors.outlineVariant.withValues(alpha: .6),
                           ),
                           const SizedBox(height: 10),
-                          const EditorialSectionTitle('最近训练'),
+                          EditorialSectionTitle(tr(context, "最近训练")),
                           const SizedBox(height: 8),
                           if (history.isEmpty)
                             _RecentTrainingRow(
-                              title: '从第一次记录开始',
-                              subtitle: '训练结束后，这里会留下你的足迹',
+                              title: tr(context, "从第一次记录开始"),
+                              subtitle: tr(context, "训练结束后，这里会留下你的足迹"),
                               onTap: () => context.push('/history'),
                             )
                           else
                             _RecentTrainingRow(
-                              title:
-                                  '${history.first.startedAt.toLocal().month}月${history.first.startedAt.toLocal().day}日 · ${history.first.title} · ${history.first.duration(at).inMinutes}分钟',
+                              title: tr(context, "{0}月{1}日 · {2} · {3}分钟", [
+                                history.first.startedAt.toLocal().month,
+                                history.first.startedAt.toLocal().day,
+                                history.first.title,
+                                history.first.duration(at).inMinutes,
+                              ]),
                               onTap: () =>
                                   context.push('/history/${history.first.id}'),
                             ),
@@ -276,22 +296,22 @@ class HomePage extends ConsumerWidget {
                             children: [
                               _QuietMetric(
                                 value: '${all.duration.inMinutes}',
-                                label: '累计分钟',
+                                label: tr(context, "累计分钟"),
                               ),
                               _QuietMetric(
                                 value: '${all.sets}',
-                                label: '累计完成组',
+                                label: tr(context, "累计完成组"),
                               ),
                               TextButton.icon(
                                 onPressed: () => context.push('/history'),
                                 icon: const Icon(Icons.history, size: 20),
-                                label: const Text('训练历史'),
+                                label: Text(tr(context, "训练历史")),
                               ),
                             ],
                           ),
                           if (recentIds.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            const EditorialSectionTitle('最近动作'),
+                            EditorialSectionTitle(tr(context, "最近动作")),
                             const SizedBox(height: 12),
                             ...recentIds
                                 .map(
@@ -385,7 +405,7 @@ class _HomeHero extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '练迹',
+                    tr(context, "练迹"),
                     style: TextStyle(
                       fontSize: 23,
                       height: 1.2,
@@ -395,7 +415,11 @@ class _HomeHero extends StatelessWidget {
                   ),
                   const SizedBox(height: 7),
                   Text(
-                    '${at.month}月${at.day}日 周${'一二三四五六日'[at.weekday - 1]}',
+                    tr(context, "{0}月{1}日 {2}", [
+                      at.month,
+                      at.day,
+                      AppStrings.of(context).weekday(at.weekday, short: true),
+                    ]),
                     style: TextStyle(
                       fontSize: 14,
                       color: colors.onSurfaceVariant,
@@ -403,7 +427,7 @@ class _HomeHero extends StatelessWidget {
                   ),
                   SizedBox(height: (width * .29).clamp(72, 155)),
                   Text(
-                    '今天，也为自己\n留一点时间',
+                    tr(context, "今天，也为自己\n留一点时间"),
                     style: TextStyle(
                       fontSize: width < 370 ? 30 : 32,
                       height: 1.35,
@@ -414,7 +438,7 @@ class _HomeHero extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '按自己的节奏开始。',
+                    tr(context, "按自己的节奏开始。"),
                     style: TextStyle(
                       fontSize: 16,
                       height: 1.45,
