@@ -1,8 +1,8 @@
 # 项目状态
 
-## 2026-10-22 GitHub 源码上传（已实现；远端待验证）
+## 2026-10-22 GitHub 源码上传（已实现、已验证）
 
-用户指定公开仓库 `https://github.com/Yiixuan6/LiftTrace.git`。已初始化本地 main、配置 origin，采用源码白名单暂存；整个 artifacts、临时工具、个人备份和签名均排除。补充 Gradle wrapper 入库，README 说明本机证据及签名不随仓库交付。未修改应用版本、业务逻辑或手机数据；本轮不重跑历史 Flutter/设备验收。GitHub 授权及推送结果见工作记录/2026-10-22.md。
+用户指定公开仓库 `https://github.com/Yiixuan6/LiftTrace.git`。142个源码/测试/文档/素材文件已推送main，首轮提交096d8d4，SSH读取远端完整SHA与本地一致；工作区干净。整个 artifacts、临时工具、个人备份和签名均排除。Gradle wrapper已入库，README说明本机证据及签名不随仓库交付。仓库级SSH443推送复用既有密钥，未改全局Git配置。未修改应用版本、业务逻辑或手机数据；本轮不重跑历史 Flutter/设备验收。实际结果见工作记录/2026-10-22.md。
 
 更新时间：2026-10-21（Asia/Shanghai）。当前源码 **0.2.10+12**，手机安装与迁移结果见本轮记录S073起。最新结果优先于历史说明。
 

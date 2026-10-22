@@ -2,7 +2,7 @@
 
 ## 2026-10-22 GitHub 源码仓库
 
-公开远端为 `https://github.com/Yiixuan6/LiftTrace.git`，默认分支 main；首次上传结果见工作记录/2026-10-22.md。整个 artifacts 仅本机保留，源码库不包含发布 APK、验收截图、真实备份、私钥或 SDK；不能把历史文档中的本机路径当作仓库现有文件。后续提交前核对 `git status`，禁止强制加入被忽略的个人数据。当前应用仍为0.2.10+12，未重新验收业务。
+公开远端为 `https://github.com/Yiixuan6/LiftTrace.git`，分支 main；142文件首次上传及本地/远端SHA一致已验证，结果见工作记录/2026-10-22.md。本机origin读取保留HTTPS，pushurl使用ssh.github.com:443及既有github.com主机信任，仓库级固定系统SSH；普通沙箱对.git写入可能被拒，需获准执行上下文。整个 artifacts 仅本机保留，源码库不包含发布 APK、验收截图、真实备份、私钥或 SDK；不能把历史文档中的本机路径当作仓库现有文件。后续提交前核对 `git status`，禁止强制加入被忽略的个人数据。当前应用仍为0.2.10+12，未重新验收业务。
 
 ## 0.2.10 正式版迁移（最新）
 
