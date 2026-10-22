@@ -1,5 +1,9 @@
 # 下一位维护者接手
 
+## README截图
+
+docs/screenshots六张PNG为2026-10-22当前源码的演示数据页面采集，README采用两行三列表格及相对图片路径。临时采集夹具在.tooling/readme_screenshots_test.dart，基于visual_capture_test缩减为六页面并注入提醒就绪状态；只用MemoryTrainingRepository，不是手机截图或系统权限证据。原始输出及联系图/哈希在artifacts/readme-preview，不覆盖原版本验收图。更新截图须继续使用合成记录，不读取真实训练库；业务版本/Release附件未改。
+
 ## 首次公开Release v0.1（已发布、已验证；Pre-release）
 
 对外README已重写；发布说明docs/releases/v0.1.md。artifacts/github-release/v0.1/LiftTrace-v0.1.apk是原正式0.2.10+12 APK的逐字节副本，SHA256SUMS.txt配套，原签名及通知资源本轮实核通过。用户自行网页发布v0.1后已实际读取公开页面及下载APK，字节数/SHA均与准备附件一致。当前页面标Pre-release，Latest入口仅转至发布列表；如需正式最新版，用户可编辑Release取消预发布并设为Latest。CLI设备授权已停止，未替用户更改Release设置；详情S080。

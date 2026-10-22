@@ -6,6 +6,18 @@
 
 [下载安装](https://github.com/Yiixuan6/LiftTrace/releases/latest) · [反馈问题](https://github.com/Yiixuan6/LiftTrace/issues)
 
+## 界面预览
+
+以下为应用实际页面，截图中的训练记录均为演示数据。
+
+| 首页 | 逐组记录 | 训练统计 |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/home.png" width="240" alt="首页：继续训练、本周目标与最近训练"> | <img src="docs/screenshots/workout.png" width="240" alt="逐组记录：重量、次数与组间休息"> | <img src="docs/screenshots/statistics.png" width="240" alt="训练统计：次数、时长、组数与训练量"> |
+
+| 训练与计划 | 动作趋势 | 深色外观 |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/training.png" width="240" alt="训练入口：动作库、模板、每周安排与历史"> | <img src="docs/screenshots/trends.png" width="240" alt="动作趋势：逐组重量变化"> | <img src="docs/screenshots/appearance-dark.png" width="240" alt="外观设置：三套配色与深色模式"> |
+
 ## 功能
 
 - **逐组记录**：记录重量、次数、组数、训练感受和备注，支持复制上一组、暂停训练及继续未完成的训练。
