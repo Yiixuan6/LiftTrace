@@ -1,5 +1,9 @@
 # 项目状态
 
+## 2026-10-22 对外README及首次公开Release（README已实现；Release待用户发布）
+
+README已改为面向使用者和开发者的介绍、安装、功能、隐私与源码运行说明，不含个人交付记录、私有路径和维护规则。用户指定首次公开标签v0.1；沿用内部版本0.2.10+12的正式APK，未降版本或重签。APK身份/原v2签名/通知图标及receiver/SHA256实核通过，54个应用源码文件与既有构建快照一致。附件已备于artifacts/github-release/v0.1，发布说明docs/releases/v0.1.md；用户选择自己在GitHub创建Release，未自动创建标签或发布。详情见S079。
+
 ## 2026-10-22 GitHub 源码上传（已实现、已验证）
 
 用户指定公开仓库 `https://github.com/Yiixuan6/LiftTrace.git`。142个源码/测试/文档/素材文件已推送main，首轮提交096d8d4，SSH读取远端完整SHA与本地一致；工作区干净。整个 artifacts、临时工具、个人备份和签名均排除。Gradle wrapper已入库，README说明本机证据及签名不随仓库交付。仓库级SSH443推送复用既有密钥，未改全局Git配置。未修改应用版本、业务逻辑或手机数据；本轮不重跑历史 Flutter/设备验收。实际结果见工作记录/2026-10-22.md。
