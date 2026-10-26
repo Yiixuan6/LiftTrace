@@ -11,7 +11,7 @@ class TemplatesPage extends ConsumerWidget {
   const TemplatesPage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     return PageBody(
       title: tr(context, "训练模板"),
       subtitle: tr(context, "示例可编辑，仅作记录结构参考，不是个性化训练处方。"),
@@ -342,7 +342,7 @@ class SchedulePage extends ConsumerWidget {
   const SchedulePage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = ref.watch(controllerProvider),
+    final c = watchVisibleController(ref, context),
         templates = c.data.templates.where((t) => !t.deleted).toList();
     return PageBody(
       title: tr(context, "每周安排"),

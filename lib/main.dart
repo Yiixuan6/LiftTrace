@@ -220,11 +220,19 @@ class LianjiApp extends ConsumerWidget {
   const LianjiApp({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(controllerProvider).data.settings;
-    final brand = BrandTheme.values.byName(settings['brand'] as String);
-    final mode = Appearance.values.byName(settings['appearance'] as String);
+    final (brandName, appearanceName, language) = ref.watch(
+      controllerProvider.select(
+        (c) => (
+          c.data.settings['brand'] as String,
+          c.data.settings['appearance'] as String,
+          c.data.settings['language'] as String?,
+        ),
+      ),
+    );
+    final brand = BrandTheme.values.byName(brandName);
+    final mode = Appearance.values.byName(appearanceName);
     return MaterialApp.router(
-      locale: AppStrings.preferred(settings['language'] as String?),
+      locale: AppStrings.preferred(language),
       supportedLocales: AppStrings.supportedLocales,
       localeListResolutionCallback: (locales, _) =>
           AppStrings.resolve(locales?.firstOrNull),

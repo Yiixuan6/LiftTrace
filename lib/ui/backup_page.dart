@@ -137,7 +137,7 @@ class _BackupState extends ConsumerState<BackupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     return PageBody(
       title: tr(context, "备份与恢复"),
       subtitle: tr(context, "完整 JSON 用于恢复，CSV 用于分析。数据只在你导出或启用 WebDAV 后传出。"),

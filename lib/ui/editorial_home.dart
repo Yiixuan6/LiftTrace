@@ -2,7 +2,6 @@ import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../application/controller.dart';
 import '../domain/models.dart';
 import '../domain/statistics.dart';
 import 'components.dart';
@@ -14,7 +13,7 @@ class HomePage extends ConsumerWidget {
   final DateTime? now;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = ref.watch(controllerProvider), d = c.data;
+    final c = watchVisibleController(ref, context), d = c.data;
     final at = now ?? DateTime.now();
     final week = Statistics.calculate(d, TimeFilter.week, at);
     final all = Statistics.calculate(d, TimeFilter.all, at);

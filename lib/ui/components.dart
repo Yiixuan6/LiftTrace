@@ -1,12 +1,25 @@
 import '../l10n/app_strings.dart';
 import 'dart:math' show pi, max;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../application/controller.dart';
 import 'package:go_router/go_router.dart';
 import '../domain/models.dart';
 import 'theme.dart';
 import 'liquid_glass.dart';
 
-class AppScaffold extends StatelessWidget {
+/// Shell branches stay mounted; hidden pages need no data-driven rebuilds.
+AppController watchVisibleController(WidgetRef ref, BuildContext context) {
+  final visible = TickerMode.valuesOf(context).enabled;
+  ref.watch(
+    controllerProvider.select(
+      (c) => visible ? (c.data.revision, c.error) : (-1, null),
+    ),
+  );
+  return ref.read(controllerProvider);
+}
+
+class AppScaffold extends ConsumerWidget {
   const AppScaffold({
     super.key,
     required this.child,
@@ -17,7 +30,7 @@ class AppScaffold extends StatelessWidget {
   final String location;
   final StatefulNavigationShell? navigationShell;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final index =
         navigationShell?.currentIndex ??
         (location.startsWith('/train') ||
@@ -40,9 +53,24 @@ class AppScaffold extends StatelessWidget {
       Icons.bar_chart,
       Icons.person_outline,
     ];
-    void select(int i) {
+    void select(int i) async {
       const paths = ['/', '/train', '/stats', '/profile'];
       if (index == i && location == paths[i]) return;
+      try {
+        await ref.read(controllerProvider).flushInputs();
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                tr(context, e is FormatException ? e.message : '保存失败，请重试'),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      if (!context.mounted) return;
       FocusManager.instance.primaryFocus?.unfocus();
       if (navigationShell != null) {
         navigationShell!.goBranch(i, initialLocation: i == index);

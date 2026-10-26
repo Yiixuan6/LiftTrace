@@ -1,5 +1,7 @@
 import '../l10n/app_strings.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../application/input_saves.dart';
 import '../domain/models.dart';
 import 'components.dart';
 
@@ -15,6 +17,7 @@ class WorkoutSetRow extends StatefulWidget {
     required this.copy,
     this.enabled = true,
     this.onValidityChanged,
+    this.inputs,
   });
   final WorkoutSet set;
   final LoadKind kind;
@@ -23,6 +26,7 @@ class WorkoutSetRow extends StatefulWidget {
   final Future<void> Function() complete, remove, copy;
   final bool enabled;
   final ValueChanged<bool>? onValidityChanged;
+  final InputSaves? inputs;
   @override
   State<WorkoutSetRow> createState() => _SetRowState();
 }
@@ -33,6 +37,11 @@ class _SetRowState extends State<WorkoutSetRow> {
   String? error;
   final invalidFields = <String>{};
   final versions = <String, int>{};
+  final requested = <String, String>{}, saved = <String, String>{};
+  final pending = <Future<void>>{};
+  void Function()? unregister;
+  bool valid = true;
+  bool syncing = false;
   @override
   void initState() {
     super.initState();
@@ -51,15 +60,107 @@ class _SetRowState extends State<WorkoutSetRow> {
       fields[k] = TextEditingController(
         text: widget.set.data[k]?.toString() ?? '',
       );
+      requested[k] = saved[k] = fields[k]!.text;
+      fields[k]!.addListener(() => changed(k));
+    }
+    unregister = widget.inputs?.register(flush);
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkoutSetRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.inputs != widget.inputs) {
+      unregister?.call();
+      unregister = widget.inputs?.register(flush);
+    }
+    // External changes (e.g. restoring a backup) may replace the document.
+    // Never normalize an in-flight edit or overwrite IME composition.
+    if (pending.isNotEmpty) return;
+    for (final key in fields.keys) {
+      final field = fields[key]!, value = field.value;
+      final currentValue = key == 'note'
+          ? (value.text.isEmpty ? null : value.text)
+          : num.tryParse(value.text);
+      if (oldWidget.set.data[key] == widget.set.data[key] ||
+          widget.set.data[key] == currentValue ||
+          saved[key] != value.text ||
+          (value.composing.isValid && !value.composing.isCollapsed)) {
+        continue;
+      }
+      final text = widget.set.data[key]?.toString() ?? '';
+      requested[key] = saved[key] = text;
+      syncing = true;
+      field.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(
+          offset: value.selection.extentOffset.clamp(0, text.length),
+        ),
+      );
+      syncing = false;
     }
   }
 
   @override
   void dispose() {
+    unregister?.call();
     for (final c in fields.values) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void changed(String key) {
+    if (syncing) return;
+    final value = fields[key]!.value;
+    if (value.composing.isValid && !value.composing.isCollapsed) return;
+    if (requested[key] == value.text) return;
+    requested[key] = value.text;
+    final future = persist(key, value.text, text: key == 'note');
+    pending.add(future);
+    unawaited(future.whenComplete(() => pending.remove(future)));
+  }
+
+  Future<void> flush() async {
+    for (final field in fields.values) {
+      if (field.value.composing.isValid && !field.value.composing.isCollapsed) {
+        throw const FormatException('请先确认输入法候选词');
+      }
+    }
+    while (pending.isNotEmpty) {
+      await Future.wait(pending.toList());
+    }
+    // Explicit actions retry unsaved valid input; never discard the draft.
+    for (final key in fields.keys) {
+      final value = fields[key]!.value;
+      if (value.composing.isValid && !value.composing.isCollapsed) {
+        throw const FormatException('请先确认输入法候选词');
+      }
+      if (saved[key] != fields[key]!.text) {
+        await persist(key, fields[key]!.text, text: key == 'note');
+      }
+    }
+    if (invalidFields.isNotEmpty) {
+      throw FormatException(error ?? '保存失败，请修正或重试后再完成');
+    }
+  }
+
+  Future<void> action(Future<void> Function() operation) async {
+    if (widget.inputs == null) {
+      await flush();
+    } else {
+      await widget.inputs!.flush();
+    }
+    await operation();
+  }
+
+  void showError(String? message) {
+    if (!mounted) return;
+    final nextValid = invalidFields.isEmpty;
+    if (valid != nextValid) {
+      valid = nextValid;
+      widget.onValidityChanged?.call(valid);
+    }
+    if (error != message) setState(() => error = message);
   }
 
   Future<void> persist(String key, String value, {bool text = false}) async {
@@ -74,22 +175,20 @@ class _SetRowState extends State<WorkoutSetRow> {
             (key.toLowerCase().contains('reps') &&
                 parsed != parsed.roundToDouble()))) {
       invalidFields.add(key);
-      widget.onValidityChanged?.call(false);
-      setState(() => error = "请填写有效的非负数，次数须为整数");
+      showError('请填写有效的非负数，次数须为整数');
       return;
     }
     try {
       await widget.save({key: text ? (value.isEmpty ? null : value) : parsed});
       if (mounted && versions[key] == version) {
         invalidFields.remove(key);
-        widget.onValidityChanged?.call(invalidFields.isEmpty);
-        setState(() => error = invalidFields.isEmpty ? null : "仍有无效输入，请修正后再完成");
+        saved[key] = value;
+        showError(invalidFields.isEmpty ? null : '仍有无效输入，请修正后再完成');
       }
     } catch (_) {
       if (mounted && versions[key] == version) {
         invalidFields.add(key);
-        widget.onValidityChanged?.call(false);
-        setState(() => error = "保存失败，请修正或重试后再完成");
+        showError('保存失败，请修正或重试后再完成');
       }
     }
   }
@@ -104,7 +203,6 @@ class _SetRowState extends State<WorkoutSetRow> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       textAlign: TextAlign.right,
       label: label,
-      onChanged: (v) => persist(key, v),
     ),
   );
   @override
@@ -133,14 +231,14 @@ class _SetRowState extends State<WorkoutSetRow> {
                 IconButton(
                   tooltip: tr(context, "复制本组为未完成组"),
                   onPressed: widget.enabled
-                      ? () => runAction(context, widget.copy)
+                      ? () => runAction(context, () => action(widget.copy))
                       : null,
                   icon: const Icon(Icons.copy),
                 ),
                 IconButton(
                   tooltip: tr(context, "删除本组"),
                   onPressed: widget.enabled
-                      ? () => runAction(context, widget.remove)
+                      ? () => runAction(context, () => action(widget.remove))
                       : null,
                   icon: const Icon(Icons.delete_outline),
                 ),
@@ -212,7 +310,6 @@ class _SetRowState extends State<WorkoutSetRow> {
                                         2.5)
                                     .clamp(0, 100000);
                             fields['weight']!.text = '$v';
-                            persist('weight', '$v');
                           },
                     icon: const Icon(Icons.remove_circle_outline),
                   ),
@@ -225,7 +322,6 @@ class _SetRowState extends State<WorkoutSetRow> {
                                 (num.tryParse(fields['weight']!.text) ?? 0) +
                                 2.5;
                             fields['weight']!.text = '$v';
-                            persist('weight', '$v');
                           },
                     icon: const Icon(Icons.add_circle_outline),
                   ),
@@ -289,7 +385,6 @@ class _SetRowState extends State<WorkoutSetRow> {
               enabled: widget.enabled,
               label: '逐组备注（可选）',
               maxLines: null,
-              onChanged: (v) => persist('note', v, text: true),
             ),
             if (error != null)
               Padding(
@@ -298,6 +393,11 @@ class _SetRowState extends State<WorkoutSetRow> {
                   tr(context, error!),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
+              ),
+            if (error != null)
+              TextButton(
+                onPressed: busy ? null : () => runAction(context, flush),
+                child: Text(tr(context, '重试保存')),
               ),
             const SizedBox(height: 12),
             if (!widget.set.completed)
@@ -308,7 +408,7 @@ class _SetRowState extends State<WorkoutSetRow> {
                         if (error != null) return;
                         setState(() => busy = true);
                         try {
-                          await widget.complete();
+                          await action(widget.complete);
                         } catch (e) {
                           if (mounted) {
                             setState(

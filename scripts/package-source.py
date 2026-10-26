@@ -59,6 +59,10 @@ public_files += list((root/'artifacts/rest-fix-0.2.9').rglob('*.json'))
 public_files += list((root/'artifacts/localization-0.2.11').rglob('*.png'))
 public_files += list((root/'artifacts/localization-0.2.11').glob('*.json'))
 public_files += list((root/'artifacts').glob('l10n-*.log'))
+for suffix in ('*.png', '*.json', '*.log'):
+    public_files += list((root/'artifacts/input-0.2.12').rglob(suffix))
+public_files += list((root/'artifacts').glob('input-*.log'))
+public_files += [root/'artifacts/input-profile-signature.txt'] if (root/'artifacts/input-profile-signature.txt').exists() else []
 with zipfile.ZipFile(evidence,'w',zipfile.ZIP_DEFLATED) as z:
     # Device identifiers are local diagnostics, never public delivery evidence.
     devices = root/'artifacts/android-devices.log'

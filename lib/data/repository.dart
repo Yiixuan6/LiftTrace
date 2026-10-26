@@ -7,6 +7,7 @@ import 'backup.dart';
 abstract interface class TrainingRepository {
   Future<AppData> load();
   Future<void> save(AppData data);
+  Future<void> saveSession(Session session, int revision);
   Future<void> close();
 }
 
@@ -119,16 +120,47 @@ class SqliteTrainingRepository implements TrainingRepository {
     await batch.commit(noResult: true);
   });
   @override
+  Future<void> saveSession(Session session, int revision) =>
+      database.transaction((tx) async {
+        final changed = await tx.update(
+          'records',
+          {
+            'payload': jsonEncode(session.data),
+            'active': session.active ? 1 : 0,
+          },
+          where: 'kind = ? AND id = ?',
+          whereArgs: ['session', session.id],
+        );
+        if (changed != 1) throw StateError('训练记录不存在，已停止保存');
+        final meta = await tx.update(
+          'metadata',
+          {'value': jsonEncode(revision)},
+          where: 'key = ?',
+          whereArgs: ['revision'],
+        );
+        if (meta != 1) throw StateError('本地元数据缺失，已停止保存');
+      });
+
+  @override
   Future<void> close() => database.close();
 }
 
 class MemoryTrainingRepository implements TrainingRepository {
-  MemoryTrainingRepository([AppData? initial]) : _data = initial ?? AppData();
+  MemoryTrainingRepository([AppData? initial])
+    : _data = (initial ?? AppData()).copy();
   AppData _data;
   @override
   Future<AppData> load() async => _data.copy();
   @override
   Future<void> save(AppData data) async => _data = data.copy();
+  @override
+  Future<void> saveSession(Session session, int revision) async {
+    final index = _data.sessions.indexWhere((s) => s.id == session.id);
+    if (index < 0) throw StateError('训练记录不存在，已停止保存');
+    _data.sessions[index] = Session(session.toJson());
+    _data.revision = revision;
+  }
+
   @override
   Future<void> close() async {}
 }

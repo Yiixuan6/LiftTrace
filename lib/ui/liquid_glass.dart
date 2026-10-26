@@ -208,10 +208,16 @@ class _LiquidOpticsPainter extends CustomPainter {
         end: Alignment.bottomRight,
         colors: [
           Colors.white.withValues(alpha: .95),
-          const Color(0xff8ce8ee).withValues(alpha: selection ? .16 : .58),
+          (selection ? const Color(0xff8ce8ee) : Colors.white).withValues(
+            alpha: selection ? .16 : .58,
+          ),
           Colors.white.withValues(alpha: .36),
-          const Color(0xff375461).withValues(alpha: dark ? .38 : .28),
-          const Color(0xfff8d9ef).withValues(alpha: .65),
+          (selection ? const Color(0xff375461) : Colors.black).withValues(
+            alpha: dark ? .38 : .28,
+          ),
+          (selection ? const Color(0xfff8d9ef) : Colors.white).withValues(
+            alpha: .65,
+          ),
           Colors.white.withValues(alpha: .9),
         ],
         stops: const [0, .18, .43, .64, .82, 1],

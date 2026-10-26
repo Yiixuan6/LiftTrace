@@ -24,6 +24,51 @@ class ActiveWorkoutPage extends ConsumerStatefulWidget {
 class _ActiveState extends ConsumerState<ActiveWorkoutPage>
     with WidgetsBindingObserver {
   Timer? tick;
+  final tickNow = ValueNotifier(DateTime.now());
+  bool allowPop = false;
+  int previousRevision = -1;
+  String? previousSessionId;
+  final previousByExercise = <String, WorkoutExercise>{};
+
+  void cachePrevious(AppController c, Session session) {
+    if (previousRevision == c.historyRevision &&
+        previousSessionId == session.id) {
+      return;
+    }
+    previousRevision = c.historyRevision;
+    previousSessionId = session.id;
+    previousByExercise.clear();
+    final previous =
+        c.data.sessions
+            .where(
+              (s) =>
+                  s.id != session.id &&
+                  !s.deleted &&
+                  !s.active &&
+                  s.startedAt.isBefore(session.startedAt),
+            )
+            .toList()
+          ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    for (final past in previous) {
+      for (final move in past.exercises) {
+        previousByExercise.putIfAbsent(
+          move.data['exerciseId'] as String,
+          () => move,
+        );
+      }
+    }
+  }
+
+  Future<void> leave() async {
+    await runAction(context, () async {
+      await ref.read(controllerProvider).flushInputs();
+      if (!mounted) return;
+      setState(() => allowPop = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted && context.canPop()) context.pop();
+    });
+  }
+
   bool finishing = false;
   bool completing = false;
   final invalidSets = <String>{};
@@ -36,7 +81,9 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
     WidgetsBinding.instance.addObserver(this);
     unawaited(refreshReminders());
     tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      if (mounted && TickerMode.getValuesNotifier(context).value.enabled) {
+        tickNow.value = DateTime.now();
+      }
     });
   }
 
@@ -44,12 +91,22 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     tick?.cancel();
+    tickNow.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(refreshReminders());
+    if (state == AppLifecycleState.resumed) {
+      tickNow.value = DateTime.now();
+      unawaited(refreshReminders());
+    }
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      unawaited(
+        ref.read(controllerProvider).flushInputs().catchError((Object _) {}),
+      );
+    }
   }
 
   Future<void> refreshReminders() async {
@@ -196,7 +253,15 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
 
   @override
   Widget build(BuildContext context) {
-    final c = ref.watch(controllerProvider);
+    final visible = TickerMode.valuesOf(context).enabled;
+    ref.watch(
+      controllerProvider.select(
+        (c) => visible
+            ? (c.workoutRevision, c.historyRevision, c.error)
+            : (-1, -1, null),
+      ),
+    );
+    final c = ref.read(controllerProvider);
     final session = widget.sessionId == null
         ? c.data.active
         : c.data.sessions
@@ -217,14 +282,16 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
         ],
       );
     }
+    cachePrevious(c, session);
     final deadline = DateTime.tryParse(
       c.data.settings['restDeadline'] as String? ?? '',
     );
-    final remaining = deadline == null
+    int? remainingAt(DateTime now) => deadline == null
         ? (c.data.settings['restRemaining'] as num?)?.toInt()
-        : (deadline.difference(DateTime.now()).inMilliseconds / 1000)
-              .ceil()
-              .clamp(0, 86400);
+        : (deadline.difference(now).inMilliseconds / 1000).ceil().clamp(
+            0,
+            86400,
+          );
     final preset =
         (c.data.settings['restPresetSeconds'] as num?)?.toInt() ??
         (session.exercises.firstOrNull?.data['restSeconds'] as num?)?.toInt() ??
@@ -253,9 +320,12 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          clock(session.duration(DateTime.now()).inSeconds),
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        child: ValueListenableBuilder<DateTime>(
+                          valueListenable: tickNow,
+                          builder: (context, now, _) => Text(
+                            clock(session.duration(now).inSeconds),
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
                         ),
                       ),
                     ],
@@ -305,132 +375,141 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
             ],
           ),
         if (session.active)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    remaining == null
-                        ? tr(context, "组间休息")
-                        : remaining == 0
-                        ? tr(context, "休息结束")
-                        : tr(context, "休息 {0}", [clock(remaining)]),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  if (reminderStatus != null)
-                    Text(tr(context, reminderStatus!.message)),
-                  Text(tr(context, "完成组后沿用 {0} 秒；点时长可立即开始", [preset])),
-                  Wrap(
-                    spacing: 8,
-                    children: [60, 90, 120]
-                        .map(
-                          (s) => ChoiceChip(
-                            label: Text(tr(context, "{0} 秒", [s])),
-                            selected: preset == s,
-                            onSelected: (_) => runAction(
-                              context,
-                              () => setRest(c, s, preset: true),
+          ValueListenableBuilder<DateTime>(
+            valueListenable: tickNow,
+            builder: (context, now, _) {
+              final remaining = remainingAt(now);
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        remaining == null
+                            ? tr(context, "组间休息")
+                            : remaining == 0
+                            ? tr(context, "休息结束")
+                            : tr(context, "休息 {0}", [clock(remaining)]),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                      ),
+                      if (reminderStatus != null)
+                        Text(tr(context, reminderStatus!.message)),
+                      Text(tr(context, "完成组后沿用 {0} 秒；点时长可立即开始", [preset])),
+                      Wrap(
+                        spacing: 8,
+                        children: [60, 90, 120]
+                            .map(
+                              (s) => ChoiceChip(
+                                label: Text(tr(context, "{0} 秒", [s])),
+                                selected: preset == s,
+                                onSelected: (_) => runAction(
+                                  context,
+                                  () => setRest(c, s, preset: true),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              final text = await askText(
+                                context,
+                                tr(context, "休息秒数（1–86400）"),
+                              );
+                              if (!context.mounted) return;
+                              final seconds = int.tryParse(text ?? '');
+                              if (seconds != null &&
+                                  seconds > 0 &&
+                                  seconds <= 86400) {
+                                await runAction(
+                                  context,
+                                  () => setRest(c, seconds, preset: true),
+                                );
+                              } else if (text != null && mounted) {
+                                restMessage(tr(context, "请输入 1–86400 的整秒数"));
+                              }
+                            },
+                            child: Text(tr(context, "自定义")),
+                          ),
+                          if (remaining != null && remaining > 0) ...[
+                            TextButton(
+                              onPressed: () => runAction(context, () async {
+                                if (deadline == null) {
+                                  await setRest(c, remaining);
+                                } else {
+                                  await c.change((d) {
+                                    d.settings['restDeadline'] = null;
+                                    d.settings['restRemaining'] = remaining;
+                                  });
+                                  try {
+                                    await ref.read(remindersProvider).cancel();
+                                  } catch (_) {
+                                    restMessage('系统提醒未能取消，请检查通知设置');
+                                  }
+                                }
+                              }),
+                              child: Text(
+                                deadline == null
+                                    ? tr(context, "继续")
+                                    : tr(context, "暂停"),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => runAction(context, () async {
+                                if (deadline == null) {
+                                  await c.change(
+                                    (d) => d.settings['restRemaining'] =
+                                        remaining + 30,
+                                  );
+                                } else {
+                                  await setRest(c, remaining + 30);
+                                }
+                              }),
+                              child: Text(tr(context, "+30 秒")),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  runAction(context, () => setRest(c, null)),
+                              child: Text(tr(context, "结束休息")),
+                            ),
+                          ],
+                          TextButton(
+                            onPressed: enableReminders,
+                            child: Text(
+                              reminderStatus?.initializationFailed == true
+                                  ? tr(context, "重试提醒")
+                                  : tr(context, "后台提醒设置"),
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      TextButton(
-                        onPressed: () async {
-                          final text = await askText(
-                            context,
-                            tr(context, "休息秒数（1–86400）"),
-                          );
-                          if (!context.mounted) return;
-                          final seconds = int.tryParse(text ?? '');
-                          if (seconds != null &&
-                              seconds > 0 &&
-                              seconds <= 86400) {
-                            await runAction(
+                          TextButton(
+                            onPressed: () => runAction(
                               context,
-                              () => setRest(c, seconds, preset: true),
-                            );
-                          } else if (text != null && mounted) {
-                            restMessage(tr(context, "请输入 1–86400 的整秒数"));
-                          }
-                        },
-                        child: Text(tr(context, "自定义")),
-                      ),
-                      if (remaining != null && remaining > 0) ...[
-                        TextButton(
-                          onPressed: () => runAction(context, () async {
-                            if (deadline == null) {
-                              await setRest(c, remaining);
-                            } else {
-                              await c.change((d) {
-                                d.settings['restDeadline'] = null;
-                                d.settings['restRemaining'] = remaining;
-                              });
-                              try {
-                                await ref.read(remindersProvider).cancel();
-                              } catch (_) {
-                                restMessage('系统提醒未能取消，请检查通知设置');
-                              }
-                            }
-                          }),
-                          child: Text(
-                            deadline == null
-                                ? tr(context, "继续")
-                                : tr(context, "暂停"),
+                              () => ref
+                                  .read(remindersProvider)
+                                  .openBackgroundSettings(),
+                            ),
+                            child: Text(tr(context, "后台运行设置")),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () => runAction(context, () async {
-                            if (deadline == null) {
-                              await c.change(
-                                (d) => d.settings['restRemaining'] =
-                                    remaining + 30,
-                              );
-                            } else {
-                              await setRest(c, remaining + 30);
-                            }
-                          }),
-                          child: Text(tr(context, "+30 秒")),
-                        ),
-                        TextButton(
-                          onPressed: () =>
-                              runAction(context, () => setRest(c, null)),
-                          child: Text(tr(context, "结束休息")),
-                        ),
-                      ],
-                      TextButton(
-                        onPressed: enableReminders,
-                        child: Text(
-                          reminderStatus?.initializationFailed == true
-                              ? tr(context, "重试提醒")
-                              : tr(context, "后台提醒设置"),
-                        ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () => runAction(
-                          context,
-                          () => ref
-                              .read(remindersProvider)
-                              .openBackgroundSettings(),
-                        ),
-                        child: Text(tr(context, "后台运行设置")),
+                      Text(
+                        tr(context, "若切到其他应用后不提醒，请在耗电管理中允许本应用后台运行。"),
+                        style: TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
-                  Text(
-                    tr(context, "若切到其他应用后不提醒，请在耗电管理中允许本应用后台运行。"),
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         if (session.active)
           LayoutBuilder(
@@ -482,21 +561,7 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
           EmptyState(message: tr(context, "添加第一个动作，开始记录")),
         ...session.exercises.indexed.toList().reversed.map((pair) {
           final i = pair.$1, move = pair.$2;
-          final previous =
-              c.data.sessions
-                  .where(
-                    (s) =>
-                        s.id != session.id &&
-                        !s.deleted &&
-                        !s.active &&
-                        s.startedAt.isBefore(session.startedAt),
-                  )
-                  .toList()
-                ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
-          final last = previous
-              .expand((s) => s.exercises)
-              .where((e) => e.data['exerciseId'] == move.data['exerciseId'])
-              .firstOrNull;
+          final last = previousByExercise[move.data['exerciseId']];
           return Column(
             key: ValueKey('workout-move-${move.id}'),
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -574,42 +639,78 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
               // Number in stored order, then reverse only the presentation.
               // New/copy groups stay newest-first without rebinding row state.
               ...move.sets.indexed.toList().reversed.map(
-                (p) => WorkoutSetRow(
-                  key: ValueKey(p.$2.id),
-                  set: p.$2,
-                  kind: move.exercise.kind,
-                  index: p.$1,
-                  enabled: !move.skipped && !session.paused,
-                  onValidityChanged: (valid) {
-                    if (mounted) {
-                      setState(() {
-                        if (valid) {
-                          invalidSets.remove(p.$2.id);
-                        } else {
-                          invalidSets.add(p.$2.id);
+                (p) => Consumer(
+                  key: ValueKey('live-${p.$2.id}'),
+                  builder: (context, ref, _) {
+                    ref.watch(
+                      controllerProvider.select(
+                        (c) => c.setRevisions[p.$2.id] ?? 0,
+                      ),
+                    );
+                    final current = ref
+                        .read(controllerProvider)
+                        .data
+                        .sessions
+                        .firstWhere((s) => s.id == session.id)
+                        .exercises
+                        .firstWhere((e) => e.id == move.id)
+                        .sets
+                        .firstWhere((s) => s.id == p.$2.id);
+                    return WorkoutSetRow(
+                      inputs: c.inputs,
+                      key: ValueKey(p.$2.id),
+                      set: current,
+                      kind: move.exercise.kind,
+                      index: p.$1,
+                      enabled: !move.skipped && !session.paused,
+                      onValidityChanged: (valid) {
+                        if (mounted) {
+                          setState(() {
+                            if (valid) {
+                              invalidSets.remove(p.$2.id);
+                            } else {
+                              invalidSets.add(p.$2.id);
+                            }
+                          });
                         }
-                      });
-                    }
-                  },
-                  save: (values) =>
-                      c.editSet(session.id, move.id, p.$2.id, values),
-                  complete: () async {
-                    await c.completeSet(session.id, move.id, p.$2.id);
-                    if (session.active) {
-                      await setRest(c, restSeconds(c, move));
-                    }
-                  },
-                  remove: () => c.editSet(session.id, move.id, p.$2.id, {
-                    'deleted': true,
-                  }),
-                  copy: () => c.updateSession(session.id, (s) {
-                    final target = s.exercises.firstWhere(
-                      (e) => e.id == move.id,
+                      },
+                      save: (values) => c.editSet(
+                        session.id,
+                        move.id,
+                        p.$2.id,
+                        values,
+                        // EditableText already reflects local text immediately.
+                        // Only the non-text controls need an acknowledgement rebuild.
+                        refreshRow: values.keys.any(
+                          (key) => [
+                            'sideMode',
+                            'feeling',
+                            'bodyState',
+                          ].contains(key),
+                        ),
+                      ),
+                      complete: () async {
+                        await c.completeSet(session.id, move.id, p.$2.id);
+                        if (session.active) {
+                          await setRest(c, restSeconds(c, move));
+                        }
+                      },
+                      remove: () => c.editSet(session.id, move.id, p.$2.id, {
+                        'deleted': true,
+                      }),
+                      copy: () => c.updateSession(session.id, (s) {
+                        final target = s.exercises.firstWhere(
+                          (e) => e.id == move.id,
+                        );
+                        (target.data['sets'] as List).add(
+                          target.sets
+                              .firstWhere((set) => set.id == p.$2.id)
+                              .duplicate()
+                              .toJson(),
+                        );
+                      }),
                     );
-                    (target.data['sets'] as List).add(
-                      p.$2.duplicate().toJson(),
-                    );
-                  }),
+                  },
                 ),
               ),
               if (!session.active)
@@ -674,105 +775,127 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
         .where((e) => !e.skipped && e.sets.any((s) => !s.completed))
         .firstOrNull;
     final nextSet = nextMove?.sets.where((s) => !s.completed).firstOrNull;
-    return Column(
-      children: [
-        Expanded(child: body),
-        if (session.active && remaining != null && remaining > 0)
-          Padding(
-            key: const ValueKey('rest-quick-controls'),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${deadline == null ? tr(context, "休息已暂停") : tr(context, "休息")} ${clock(remaining)}',
-                    style: Theme.of(context).textTheme.titleMedium,
+    return PopScope(
+      canPop: allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) unawaited(leave());
+      },
+      child: Column(
+        children: [
+          Expanded(child: body),
+          if (session.active)
+            ValueListenableBuilder<DateTime>(
+              valueListenable: tickNow,
+              builder: (context, now, _) {
+                final remaining = remainingAt(now);
+                if (remaining == null || remaining <= 0) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  key: const ValueKey('rest-quick-controls'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
                   ),
-                ),
-                IconButton(
-                  key: const ValueKey('rest-quick-pause'),
-                  tooltip: deadline == null
-                      ? tr(context, "继续休息")
-                      : tr(context, "暂停休息"),
-                  onPressed: () => runAction(context, () async {
-                    if (deadline == null) {
-                      await setRest(c, remaining);
-                    } else {
-                      await c.change((d) {
-                        d.settings['restDeadline'] = null;
-                        d.settings['restRemaining'] = remaining;
-                      });
-                      await ref.read(remindersProvider).cancel();
-                    }
-                  }),
-                  icon: Icon(deadline == null ? Icons.play_arrow : Icons.pause),
-                ),
-                TextButton(
-                  key: const ValueKey('rest-skip'),
-                  onPressed: () => runAction(context, () => setRest(c, null)),
-                  child: Text(tr(context, "跳过")),
-                ),
-              ],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${deadline == null ? tr(context, "休息已暂停") : tr(context, "休息")} ${clock(remaining)}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      IconButton(
+                        key: const ValueKey('rest-quick-pause'),
+                        tooltip: deadline == null
+                            ? tr(context, "继续休息")
+                            : tr(context, "暂停休息"),
+                        onPressed: () => runAction(context, () async {
+                          if (deadline == null) {
+                            await setRest(c, remaining);
+                          } else {
+                            await c.change((d) {
+                              d.settings['restDeadline'] = null;
+                              d.settings['restRemaining'] = remaining;
+                            });
+                            await ref.read(remindersProvider).cancel();
+                          }
+                        }),
+                        icon: Icon(
+                          deadline == null ? Icons.play_arrow : Icons.pause,
+                        ),
+                      ),
+                      TextButton(
+                        key: const ValueKey('rest-skip'),
+                        onPressed: () =>
+                            runAction(context, () => setRest(c, null)),
+                        child: Text(tr(context, "跳过")),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-        if (session.active && nextMove != null && nextSet != null)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (mainError != null)
-                    Text(
-                      mainError!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+          if (session.active && nextMove != null && nextSet != null)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (mainError != null)
+                      Text(
+                        mainError!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    FilledButton.icon(
+                      onPressed:
+                          completing ||
+                              session.paused ||
+                              invalidSets.contains(nextSet.id)
+                          ? null
+                          : () async {
+                              setState(() {
+                                completing = true;
+                                mainError = null;
+                              });
+                              try {
+                                await c.flushInputs();
+                                await c.completeSet(
+                                  session.id,
+                                  nextMove.id,
+                                  nextSet.id,
+                                );
+                                await setRest(c, restSeconds(c, nextMove));
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(
+                                    () => mainError = e is FormatException
+                                        ? e.message
+                                        : tr(context, "保存失败，请重试"),
+                                  );
+                                }
+                              }
+                              if (mounted) setState(() => completing = false);
+                            },
+                      icon: const Icon(Icons.check),
+                      label: Text(
+                        completing
+                            ? tr(context, "保存中…")
+                            : tr(context, "完成下一组 · {0}", [
+                                nextMove.exercise.name,
+                              ]),
                       ),
                     ),
-                  FilledButton.icon(
-                    onPressed:
-                        completing ||
-                            session.paused ||
-                            invalidSets.contains(nextSet.id)
-                        ? null
-                        : () async {
-                            setState(() {
-                              completing = true;
-                              mainError = null;
-                            });
-                            try {
-                              await c.completeSet(
-                                session.id,
-                                nextMove.id,
-                                nextSet.id,
-                              );
-                              await setRest(c, restSeconds(c, nextMove));
-                            } catch (e) {
-                              if (mounted) {
-                                setState(
-                                  () => mainError = e is FormatException
-                                      ? e.message
-                                      : tr(context, "保存失败，请重试"),
-                                );
-                              }
-                            }
-                            if (mounted) setState(() => completing = false);
-                          },
-                    icon: const Icon(Icons.check),
-                    label: Text(
-                      completing
-                          ? tr(context, "保存中…")
-                          : tr(context, "完成下一组 · {0}", [
-                              nextMove.exercise.name,
-                            ]),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -782,6 +905,13 @@ class _ActiveState extends ConsumerState<ActiveWorkoutPage>
     Session s, {
     bool editing = false,
   }) async {
+    try {
+      await c.flushInputs();
+    } catch (e) {
+      if (context.mounted) await runAction(context, () async => throw e);
+      return;
+    }
+    if (!context.mounted) return;
     var feeling = s.data['feeling'] as String?;
     final note = TextEditingController(
       text: s.data['recoveryNote'] as String? ?? '',

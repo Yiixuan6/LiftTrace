@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../application/controller.dart';
 import '../domain/models.dart';
 import '../domain/statistics.dart';
 import 'components.dart';
@@ -81,7 +80,7 @@ class _StatisticsState extends ConsumerState<StatisticsPage> {
   );
   @override
   Widget build(BuildContext context) {
-    final data = ref.watch(controllerProvider).data,
+    final data = watchVisibleController(ref, context).data,
         now = widget.now ?? DateTime.now();
     final stats = Statistics.calculate(data, filter, now);
     final series = weightSeries(data, filter, now);

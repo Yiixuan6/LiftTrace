@@ -14,7 +14,7 @@ class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     Widget destination(
       String title,
       String subtitle,
@@ -115,12 +115,12 @@ class ProfilePage extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.info_outline),
               title: Text(tr(context, "关于练迹")),
-              subtitle: Text(tr(context, "0.2.11 · 个人离线训练日志")),
+              subtitle: Text(tr(context, "0.2.12 · 个人离线训练日志")),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showAboutDialog(
                 context: context,
                 applicationName: tr(context, "练迹 · 训练日志"),
-                applicationVersion: '0.2.11',
+                applicationVersion: '0.2.12',
                 children: [
                   Text(
                     tr(
@@ -212,7 +212,7 @@ class _AppearanceState extends ConsumerState<AppearancePage> {
   bool busy = false;
   @override
   Widget build(BuildContext context) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     final brand =
         previewBrand ??
         BrandTheme.values.byName(c.data.settings['brand'] as String);

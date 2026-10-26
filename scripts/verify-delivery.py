@@ -52,6 +52,10 @@ for name in [stem+'-source.zip', stem+'-evidence.zip']:
             assert 'docs/PAGE_REFRESH.md' in archive.namelist(), 'Editorial page handoff missing'
             assert 'integration_test/rest_probe_app.dart' in archive.namelist(), 'Standalone device fixture missing'
             assert 'design-qa.md' in archive.namelist(), 'Visual QA report missing from source'
+            if version == '0.2.12':
+                for required in ['lib/application/input_saves.dart', 'test/session_incremental_test.dart',
+                                 'test/input_editing_test.dart', 'docs/INPUT_PERFORMANCE.md', 'docs/FLUID_CLOUD.md']:
+                    assert required in archive.namelist(), 'Input optimization source missing'
             manifest = json.loads(archive.read('SOURCE_MANIFEST.json'))
             assert len(manifest) + 1 == len(archive.namelist())
             for item in manifest:
@@ -74,11 +78,12 @@ rest_probe = json.loads(log('rest-background-device.json') or '{}')
 release_rest = json.loads(log(f'rest-fix-{version}/release-device.json') or '{}')
 release_sleep = json.loads(log(f'rest-fix-{version}/release-lock-device.json') or '{}')
 release_upgrade = json.loads(log(f'rest-fix-{version}/user-upgrade.json') or '{}')
+input_report = json.loads(log(f'input-{version}/report.json') or '{}')
 manifest = {
     'status': 'signed_release_partial_device_acceptance' if flow else 'signed_release_device_acceptance_pending',
     'applicationId': 'app.lianji.training', 'version': version+'+'+build,
     'packageRoles': {'formal': 'app.lianji.training', 'existingPhoneQa': 'app.lianji.training.qa', 'currentDailyApp': 'app.lianji.training'},
-    'currentDailyAppVersion': (json.loads(log('localization-0.2.11/report.json') or '{}').get('phoneInstalledVersion', '0.2.10+12')),
+    'currentDailyAppVersion': input_report.get('phoneInstalledVersion') or (json.loads(log('localization-0.2.11/report.json') or '{}').get('phoneInstalledVersion', '0.2.10+12')),
     'retainedPhoneQaVersion': '0.2.9+11',
     'visualEvidenceBaselineVersion': '0.2.9+11',
     'minimumAndroidApi': 26, 'targetAndroidApi': 36,
@@ -87,7 +92,7 @@ manifest = {
     'releaseKeyCreated': True,
     'certificateSha256': '2246bdf6a62b0c1e059d56d24b5d556bb046b0f6bfadd5aa2f43a3eefb320944',
     'deviceInstallAttempted': True,
-    'deviceAndroidApi': 36,
+    'deviceAndroidApi': input_report.get('deviceAndroidApi', 36),
     'qaReleaseInstallAndLaunchPassed': 'Status: ok' in log('android-release-final-launch.log'),
     'qaNormalHomeVersion': version+'+'+build if 'normal_home_visible=True' in log('ui-redesign/'+version+'-normal-home.log') else None,
     'qaNormalHomeVisible': 'normal_home_visible=True' in log('ui-redesign/'+version+'-normal-home.log'),
@@ -135,6 +140,7 @@ manifest = {
     'allAcceptanceItemsPassed': False,
     'editorialPagesVersion': '0.2.9+11',
     'multilingualEvidence': json.loads(log('localization-0.2.11/report.json') or '{}'),
+    'inputPerformanceAndDockEvidence': input_report,
     'exportNamingAndFormalMigrationEvidence': json.loads(log('export-migration-0.2.10/report.json') or '{}'),
     'restReleasePriorVersion': '0.2.9+11',
     'restReleasePriorEvidence': json.loads(log('rest-fix-0.2.9/release-device.json') or '{}'),

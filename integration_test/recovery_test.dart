@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -9,16 +10,24 @@ import 'package:lianji/data/repository.dart';
 import 'package:lianji/domain/models.dart';
 import 'package:lianji/platform/reminders.dart';
 
-// Run seed, force-stop only app.lianji.training.qa, then run resume.
+// Run seed, force-stop only app.lianji.training.qa.design, then run resume.
 // This entry point must only be installed with LIANJI_TEST_BUILD=1.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   const phase = String.fromEnvironment('QA_PHASE', defaultValue: 'seed');
+  const run = String.fromEnvironment('QA_RUN');
   testWidgets('Android isolated recovery $phase', (tester) async {
+    expect(
+      await const MethodChannel(
+        'app.lianji.training/app-info',
+      ).invokeMethod<String>('getApplicationName'),
+      '练迹设计验收',
+    );
+    expect(run, matches(RegExp(r'^[a-zA-Z0-9-]+$')));
     final directory = await getApplicationSupportDirectory();
-    expect(directory.path, contains('app.lianji.training.qa'));
-    final marker = File('${directory.path}/recovery-expected.json');
-    final path = '${directory.path}/recovery-qa.db';
+    expect(directory.path, contains('app.lianji.training.qa.design/'));
+    final marker = File('${directory.path}/recovery-$run.json');
+    final path = '${directory.path}/recovery-$run.db';
     const secure = FlutterSecureStorage(
       aOptions: AndroidOptions(resetOnError: false),
     );

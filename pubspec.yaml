@@ -1,7 +1,7 @@
 name: lianji
 description: 练迹 · 离线训练日志
 publish_to: none
-version: 0.2.11+13
+version: 0.2.12+14
 environment:
   sdk: '>=3.8.0 <4.0.0'
 dependencies:

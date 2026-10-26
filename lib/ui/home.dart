@@ -2,7 +2,6 @@ import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../application/controller.dart';
 import 'components.dart';
 import 'theme.dart';
 
@@ -12,7 +11,7 @@ class TrainPage extends ConsumerWidget {
   const TrainPage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     return PageBody(
       root: true,
       title: tr(context, "训练"),

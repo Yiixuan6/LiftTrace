@@ -467,5 +467,10 @@
   "周六": "Sat",
   "周日": "Sun",
   "将使用设备语言，不支持的语言使用简体中文": "Uses the device language; unsupported languages use Simplified Chinese",
-  "{0}月{1}日 {2}": "{0}/{1} · {2}"
+  "{0}月{1}日 {2}": "{0}/{1} · {2}",
+  "请先确认输入法候选词": "Please confirm the input method candidate first",
+  "0.2.12 · 个人离线训练日志": "0.2.12 · Personal offline training log",
+  "训练记录不存在，已停止保存": "Workout not found. Saving stopped to protect your data.",
+  "本地元数据缺失，已停止保存": "Local metadata is missing. Saving stopped to protect your data.",
+  "重试保存": "Retry saving"
 }

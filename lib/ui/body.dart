@@ -1,8 +1,8 @@
 import '../l10n/app_strings.dart';
+import '../application/controller.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../application/controller.dart';
 import '../domain/models.dart';
 import 'components.dart';
 
@@ -25,7 +25,7 @@ class _BodyState extends ConsumerState<BodyPage> {
   String metric = 'weight';
   @override
   Widget build(BuildContext context) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     final records = c.data.measurements.where((m) => !m.deleted).toList()
       ..sort(
         (a, b) =>

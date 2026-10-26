@@ -1,7 +1,7 @@
 import '../l10n/app_strings.dart';
+import '../application/controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../application/controller.dart';
 import '../domain/models.dart';
 import 'components.dart';
 
@@ -21,7 +21,7 @@ class _LibraryState extends ConsumerState<LibraryPage> {
   bool favorites = false, recent = false;
   @override
   Widget build(BuildContext context) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     final recentIds = c.data.sessions
         .where((s) => !s.deleted)
         .expand((s) => s.exercises)

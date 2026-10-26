@@ -2,7 +2,6 @@ import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../application/controller.dart';
 import '../domain/models.dart';
 import 'components.dart';
 
@@ -18,7 +17,7 @@ class _HistoryState extends ConsumerState<HistoryPage> {
   bool calendar = false;
   @override
   Widget build(BuildContext context) {
-    final c = ref.watch(controllerProvider);
+    final c = watchVisibleController(ref, context);
     final list =
         c.data.sessions
             .where(

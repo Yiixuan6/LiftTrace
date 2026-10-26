@@ -57,6 +57,13 @@ android {
     }
 
     buildTypes {
+        // Standalone performance probes must preserve the isolated QA identity
+        // and its existing certificate, just like debug integration fixtures.
+        maybeCreate("profile").apply {
+            if (System.getenv("LIANJI_TEST_BUILD") == "1" && signingPropertiesFile?.exists() == true) {
+                signingConfig = signingConfigs.findByName("lianjiRelease")
+            }
+        }
         debug {
             // QA variants share the approved certificate to preserve their
             // isolated data when switching between device tests and release QA.
